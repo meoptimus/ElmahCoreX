@@ -1,4 +1,4 @@
-﻿<Project Sdk="Microsoft.NET.Sdk">
+<Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
         <LangVersion>default</LangVersion>
@@ -7,7 +7,7 @@
         <AssemblyVersion>2.1.5.0</AssemblyVersion>
         <FileVersion>2.1.5.0</FileVersion>
         <AssemblyName>ElmahCoreEx</AssemblyName>
-        <PackageId>ElmahCoreEx.Common</PackageId>
+        <PackageId>ElmahCoreX.Common</PackageId>
         <Authors>ElmahCoreEx</Authors>
         <Company>ElmahCoreEx</Company>
         <Product>ElmahCoreEx</Product>

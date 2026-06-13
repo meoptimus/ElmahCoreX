@@ -4,6 +4,8 @@ using System.Globalization;
 using System.IO;
 using System.Linq;
 using System.Text;
+using System.Threading;
+using System.Threading.Tasks;
 using System.Xml;
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Options;
@@ -181,5 +183,222 @@ public class XmlFileErrorLog : ErrorLog
         return 0 == (attributes & (FileAttributes.Directory |
                                    FileAttributes.Hidden |
                                    FileAttributes.System));
+    }
+
+    public override Task DeleteErrorsAsync(IEnumerable<string> errorIds, CancellationToken cancellationToken = default)
+    {
+        if (!Directory.Exists(LogPath))
+            return Task.CompletedTask;
+
+        foreach (var id in errorIds)
+        {
+            try
+            {
+                var guidId = new Guid(id).ToString(); // validate GUID
+                var files = new DirectoryInfo(LogPath).GetFiles($"error-*-{guidId}.xml");
+                foreach (var file in files)
+                {
+                    if (IsUserFile(file.Attributes))
+                    {
+                        file.Delete();
+                    }
+                }
+            }
+            catch
+            {
+                // ignore
+            }
+        }
+        return Task.CompletedTask;
+    }
+
+    public override Task DeleteAllErrorsAsync(string applicationName = null, CancellationToken cancellationToken = default)
+    {
+        if (!Directory.Exists(LogPath))
+            return Task.CompletedTask;
+
+        var dir = new DirectoryInfo(LogPath);
+        var files = dir.GetFiles("error-*.xml");
+        foreach (var file in files)
+        {
+            if (IsUserFile(file.Attributes))
+            {
+                try
+                {
+                    if (string.IsNullOrEmpty(applicationName))
+                    {
+                        file.Delete();
+                    }
+                    else
+                    {
+                        // Check if file matches applicationName
+                        using (var reader = XmlReader.Create(file.FullName, new XmlReaderSettings { CheckCharacters = false }))
+                        {
+                            if (reader.IsStartElement("error"))
+                            {
+                                var app = reader.GetAttribute("application");
+                                if (string.Equals(app, applicationName, StringComparison.OrdinalIgnoreCase))
+                                {
+                                    reader.Close(); // must close before delete
+                                    file.Delete();
+                                }
+                            }
+                        }
+                    }
+                }
+                catch
+                {
+                    // ignore
+                }
+            }
+        }
+        return Task.CompletedTask;
+    }
+
+    public override Task SetReviewedAsync(string id, bool isReviewed, CancellationToken cancellationToken = default)
+    {
+        try
+        {
+            var guidId = new Guid(id).ToString(); // validate GUID
+            var file = new DirectoryInfo(LogPath).GetFiles($"error-*-{guidId}.xml").FirstOrDefault();
+            if (file != null && IsUserFile(file.Attributes))
+            {
+                var doc = new XmlDocument();
+                doc.Load(file.FullName);
+                var root = doc.DocumentElement;
+                if (root != null && root.Name == "error")
+                {
+                    if (isReviewed)
+                    {
+                        root.SetAttribute("isReviewed", "true");
+                    }
+                    else
+                    {
+                        root.RemoveAttribute("isReviewed");
+                    }
+                    doc.Save(file.FullName);
+                }
+            }
+        }
+        catch
+        {
+            // ignore
+        }
+        return Task.CompletedTask;
+    }
+
+    private bool MatchesFilter(string path, ErrorLogFilter filter)
+    {
+        try
+        {
+            using var reader = XmlReader.Create(path, new XmlReaderSettings { CheckCharacters = false });
+            if (!reader.IsStartElement("error")) return false;
+
+            var app = reader.GetAttribute("application");
+            if (filter.Application != null && !string.Equals(app, filter.Application, StringComparison.OrdinalIgnoreCase))
+                return false;
+
+            var host = reader.GetAttribute("host");
+            if (filter.Host != null && (host == null || !host.Contains(filter.Host, StringComparison.OrdinalIgnoreCase)))
+                return false;
+
+            var type = reader.GetAttribute("type");
+            if (filter.Type != null && (type == null || !type.Contains(filter.Type, StringComparison.OrdinalIgnoreCase)))
+                return false;
+
+            var message = reader.GetAttribute("message");
+            if (filter.Message != null && (message == null || !message.Contains(filter.Message, StringComparison.OrdinalIgnoreCase)))
+                return false;
+
+            var user = reader.GetAttribute("user");
+            if (filter.User != null && (user == null || !user.Contains(filter.User, StringComparison.OrdinalIgnoreCase)))
+                return false;
+
+            var statusCodeString = reader.GetAttribute("statusCode") ?? string.Empty;
+            var statusCode = statusCodeString.Length == 0 ? 0 : XmlConvert.ToInt32(statusCodeString);
+            if (filter.StatusCode.HasValue && statusCode != filter.StatusCode.Value)
+                return false;
+
+            var isReviewedString = reader.GetAttribute("isReviewed") ?? string.Empty;
+            var isReviewed = isReviewedString.Length != 0 && XmlConvert.ToBoolean(isReviewedString);
+            if (filter.IsReviewed.HasValue && isReviewed != filter.IsReviewed.Value)
+                return false;
+
+            var timeString = reader.GetAttribute("time") ?? string.Empty;
+            if (timeString.Length > 0)
+            {
+                var time = XmlConvert.ToDateTime(timeString, XmlDateTimeSerializationMode.Local);
+                if (filter.From.HasValue && time < filter.From.Value)
+                    return false;
+                if (filter.To.HasValue && time > filter.To.Value)
+                    return false;
+            }
+            else
+            {
+                if (filter.From.HasValue || filter.To.HasValue)
+                    return false;
+            }
+
+            return true;
+        }
+        catch
+        {
+            return false;
+        }
+    }
+
+    public override Task<int> GetErrorsAsync(
+        int errorIndex, 
+        int pageSize, 
+        ICollection<ErrorLogEntry> errorEntryList, 
+        ErrorLogFilter filter, 
+        CancellationToken cancellationToken = default)
+    {
+        if (filter == null)
+        {
+            return Task.FromResult(GetErrors(errorIndex, pageSize, errorEntryList));
+        }
+
+        if (!Directory.Exists(LogPath))
+            return Task.FromResult(0);
+
+        var dir = new DirectoryInfo(LogPath);
+        var infos = dir.GetFiles("error-*.xml");
+        if (!infos.Any())
+            return Task.FromResult(0);
+
+        var files = infos.Where(info => IsUserFile(info.Attributes))
+            .OrderByDescending(info => info.Name, StringComparer.OrdinalIgnoreCase);
+
+        var matchedFiles = new List<FileInfo>();
+        foreach (var file in files)
+        {
+            if (MatchesFilter(file.FullName, filter))
+            {
+                matchedFiles.Add(file);
+            }
+        }
+
+        if (errorEntryList != null)
+        {
+            var paged = matchedFiles.Skip(errorIndex).Take(pageSize);
+            foreach (var file in paged)
+            {
+                try
+                {
+                    var entry = LoadErrorLogEntry(file.FullName);
+                    if (entry != null)
+                    {
+                        errorEntryList.Add(entry);
+                    }
+                }
+                catch
+                {
+                    // ignore
+                }
+            }
+        }
+
+        return Task.FromResult(matchedFiles.Count);
     }
 }

@@ -83,6 +83,8 @@ public static class ErrorXml
         var statusCodeString = reader.GetAttribute("statusCode") ?? string.Empty;
         error.StatusCode = statusCodeString.Length == 0 ? 0 : XmlConvert.ToInt32(statusCodeString);
         error.WebHostHtmlMessage = reader.GetAttribute("webHostHtmlMessage");
+        var isReviewedString = reader.GetAttribute("isReviewed") ?? string.Empty;
+        error.IsReviewed = isReviewedString.Length != 0 && XmlConvert.ToBoolean(isReviewedString);
     }
 
     /// <summary>
@@ -210,6 +212,8 @@ public static class ErrorXml
         if (error.StatusCode != 0)
             WriteXmlAttribute(writer, "statusCode", XmlConvert.ToString(error.StatusCode));
         WriteXmlAttribute(writer, "webHostHtmlMessage", error.WebHostHtmlMessage);
+        if (error.IsReviewed)
+            WriteXmlAttribute(writer, "isReviewed", XmlConvert.ToString(error.IsReviewed));
     }
 
     /// <summary>

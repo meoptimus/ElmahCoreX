@@ -229,4 +229,29 @@ public abstract class ErrorLog
             page += 1;
         } while (continueGet);
     }
+
+    public virtual Task DeleteErrorsAsync(IEnumerable<string> errorIds, CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
+
+    public virtual Task DeleteAllErrorsAsync(string applicationName = null, CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
+
+    public virtual Task SetReviewedAsync(string id, bool isReviewed, CancellationToken cancellationToken = default)
+    {
+        return Task.CompletedTask;
+    }
+
+    public virtual Task<int> GetErrorsAsync(
+        int errorIndex, 
+        int pageSize, 
+        ICollection<ErrorLogEntry> errorEntryList, 
+        ErrorLogFilter filter, 
+        CancellationToken cancellationToken = default)
+    {
+        return GetErrorsAsync(errorIndex, pageSize, errorEntryList, cancellationToken);
+    }
 }

@@ -1,6 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Data;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using Microsoft.Data.SqlClient;
 using Microsoft.Extensions.Options;
 
@@ -85,7 +88,7 @@ public class SqlErrorLog : ErrorLog
             using var connection = new SqlConnection(ConnectionString);
             using var command = Commands.LogError(id, ApplicationName, error.HostName, error.Type, error.Source,
                 error.Message, error.User, error.StatusCode, error.Time, errorXml,
-                DatabaseSchemaName, DatabaseTableName);
+                DatabaseSchemaName, DatabaseTableName, error.IsReviewed);
             command.Connection = connection;
             connection.Open();
             command.ExecuteNonQuery();
@@ -149,7 +152,9 @@ public class SqlErrorLog : ErrorLog
                 {
                     var id = reader.GetGuid(0);
                     var xml = reader.GetString(1);
+                    var isReviewed = reader.GetBoolean(2);
                     var error = ErrorXml.DecodeString(xml);
+                    error.IsReviewed = isReviewed;
                     errorEntryList.Add(new ErrorLogEntry(this, id.ToString(), error));
                 }
             }
@@ -176,8 +181,14 @@ public class SqlErrorLog : ErrorLog
         var exists = (int?)cmdCheck.ExecuteScalar();
 
         if (!exists.HasValue)
+        {
             ExecuteBatchNonQuery(Commands.CreateTableSql(DatabaseSchemaName, DatabaseTableName),
                 connection);
+        }
+
+        // Run migrations (columns, indexes, stored procedures)
+        ExecuteBatchNonQuery(Commands.CreateMigrationsSql(DatabaseSchemaName, DatabaseTableName),
+            connection);
     }
 
     private static void ExecuteBatchNonQuery(string sql, SqlConnection conn)
@@ -266,14 +277,15 @@ WHERE EXISTS (
             DateTime time,
             string xml,
             string schemaName,
-            string tableName)
+            string tableName,
+            bool isReviewed)
         {
             var command = new SqlCommand
             {
                 CommandText = $@"
 /* elmah */
-INSERT INTO [{schemaName}].[{tableName}] (ErrorId, Application, Host, Type, Source, Message, ""User"", StatusCode, TimeUtc, AllXml)
-VALUES (@ErrorId, @Application, @Host, @Type, @Source, @Message, @User, @StatusCode, @TimeUtc, @AllXml)
+INSERT INTO [{schemaName}].[{tableName}] (ErrorId, Application, Host, Type, Source, Message, ""User"", StatusCode, TimeUtc, AllXml, IsReviewed, ApplicationName)
+VALUES (@ErrorId, @Application, @Host, @Type, @Source, @Message, @User, @StatusCode, @TimeUtc, @AllXml, @IsReviewed, @ApplicationName)
 "
             };
             command.Parameters.Add(new SqlParameter("ErrorId", id));
@@ -286,6 +298,8 @@ VALUES (@ErrorId, @Application, @Host, @Type, @Source, @Message, @User, @StatusC
             command.Parameters.Add(new SqlParameter("StatusCode", statusCode));
             command.Parameters.Add(new SqlParameter("TimeUtc", time.ToUniversalTime()));
             command.Parameters.Add(new SqlParameter("AllXml", xml));
+            command.Parameters.Add(new SqlParameter("IsReviewed", isReviewed));
+            command.Parameters.Add(new SqlParameter("ApplicationName", appName));
 
             return command;
         }
@@ -322,7 +336,7 @@ WHERE
             var command = new SqlCommand
             {
                 CommandText = $@"
-SELECT ErrorId, AllXml FROM [{schemaName}].[{tableName}]
+SELECT ErrorId, AllXml, IsReviewed FROM [{schemaName}].[{tableName}]
 WHERE
     Application = @Application
 ORDER BY [Sequence] DESC
@@ -349,5 +363,199 @@ FETCH NEXT @limit ROWS ONLY;
             command.Parameters.Add("@Application", SqlDbType.NVarChar, MaxAppNameLength).Value = appName;
             return command;
         }
+
+        public static string CreateMigrationsSql(string schemaName, string tableName)
+        {
+            return $@"
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('[{schemaName}].[{tableName}]') AND name = 'IsReviewed')
+BEGIN
+    ALTER TABLE [{schemaName}].[{tableName}] ADD [IsReviewed] BIT NOT NULL CONSTRAINT [DF_{tableName}_IsReviewed] DEFAULT (0);
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.columns WHERE object_id = OBJECT_ID('[{schemaName}].[{tableName}]') AND name = 'ApplicationName')
+BEGIN
+    ALTER TABLE [{schemaName}].[{tableName}] ADD [ApplicationName] NVARCHAR(100) NULL;
+END
+GO
+
+IF NOT EXISTS (SELECT 1 FROM sys.indexes WHERE object_id = OBJECT_ID('[{schemaName}].[{tableName}]') AND name = 'IX_{tableName}_Filtered')
+BEGIN
+    CREATE NONCLUSTERED INDEX [IX_{tableName}_Filtered] ON [{schemaName}].[{tableName}] (TimeUtc DESC, Application, StatusCode);
+END
+GO
+
+IF EXISTS (SELECT 1 FROM sys.procedures WHERE object_id = OBJECT_ID('[{schemaName}].[{tableName}_BulkDelete]'))
+BEGIN
+    DROP PROCEDURE [{schemaName}].[{tableName}_BulkDelete];
+END
+GO
+
+CREATE PROCEDURE [{schemaName}].[{tableName}_BulkDelete]
+    @App NVARCHAR(60),
+    @IdsJson NVARCHAR(MAX)
+AS
+BEGIN
+    DELETE FROM [{schemaName}].[{tableName}]
+    WHERE Application = @App
+      AND ErrorId IN (SELECT CAST(value AS UNIQUEIDENTIFIER) FROM OPENJSON(@IdsJson))
+END
+GO
+
+IF EXISTS (SELECT 1 FROM sys.procedures WHERE object_id = OBJECT_ID('[{schemaName}].[{tableName}_FilteredCount]'))
+BEGIN
+    DROP PROCEDURE [{schemaName}].[{tableName}_FilteredCount];
+END
+GO
+
+CREATE PROCEDURE [{schemaName}].[{tableName}_FilteredCount]
+    @App NVARCHAR(60),
+    @Type NVARCHAR(100) = NULL,
+    @Message NVARCHAR(MAX) = NULL,
+    @Host NVARCHAR(50) = NULL,
+    @User NVARCHAR(50) = NULL,
+    @StatusCode INT = NULL,
+    @From DATETIME = NULL,
+    @To DATETIME = NULL,
+    @IsReviewed BIT = NULL
+AS
+BEGIN
+    SELECT COUNT(*) FROM [{schemaName}].[{tableName}]
+    WHERE Application = @App
+      AND (@Type IS NULL OR Type LIKE '%' + @Type + '%')
+      AND (@Message IS NULL OR Message LIKE '%' + @Message + '%')
+      AND (@Host IS NULL OR Host LIKE '%' + @Host + '%')
+      AND (@User IS NULL OR [User] LIKE '%' + @User + '%')
+      AND (@StatusCode IS NULL OR StatusCode = @StatusCode)
+      AND (@From IS NULL OR TimeUtc >= @From)
+      AND (@To IS NULL OR TimeUtc <= @To)
+      AND (@IsReviewed IS NULL OR IsReviewed = @IsReviewed)
+END
+GO";
+        }
+    }
+
+    public override async Task DeleteErrorsAsync(IEnumerable<string> errorIds, CancellationToken cancellationToken = default)
+    {
+        if (errorIds == null || !errorIds.Any()) return;
+
+        var json = System.Text.Json.JsonSerializer.Serialize(errorIds);
+
+        using var connection = new SqlConnection(ConnectionString);
+        using var command = new SqlCommand($"[{DatabaseSchemaName}].[{DatabaseTableName}_BulkDelete]", connection);
+        command.CommandType = CommandType.StoredProcedure;
+        command.Parameters.Add(new SqlParameter("App", ApplicationName));
+        command.Parameters.Add(new SqlParameter("IdsJson", json));
+
+        await connection.OpenAsync(cancellationToken);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public override async Task DeleteAllErrorsAsync(string applicationName = null, CancellationToken cancellationToken = default)
+    {
+        var app = string.IsNullOrEmpty(applicationName) ? ApplicationName : applicationName;
+
+        using var connection = new SqlConnection(ConnectionString);
+        using var command = new SqlCommand($"DELETE FROM [{DatabaseSchemaName}].[{DatabaseTableName}] WHERE Application = @Application", connection);
+        command.Parameters.Add(new SqlParameter("Application", app));
+
+        await connection.OpenAsync(cancellationToken);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public override async Task SetReviewedAsync(string id, bool isReviewed, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(id)) return;
+        var errorGuid = new Guid(id);
+
+        using var connection = new SqlConnection(ConnectionString);
+        using var command = new SqlCommand($"UPDATE [{DatabaseSchemaName}].[{DatabaseTableName}] SET IsReviewed = @IsReviewed WHERE ErrorId = @ErrorId AND Application = @Application", connection);
+        command.Parameters.Add(new SqlParameter("IsReviewed", isReviewed));
+        command.Parameters.Add(new SqlParameter("ErrorId", errorGuid));
+        command.Parameters.Add(new SqlParameter("Application", ApplicationName));
+
+        await connection.OpenAsync(cancellationToken);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public override async Task<int> GetErrorsAsync(
+        int errorIndex, 
+        int pageSize, 
+        ICollection<ErrorLogEntry> errorEntryList, 
+        ErrorLogFilter filter, 
+        CancellationToken cancellationToken = default)
+    {
+        if (filter == null)
+        {
+            var entries = new List<ErrorLogEntry>();
+            var count = GetErrors(errorIndex, pageSize, entries);
+            foreach (var entry in entries) errorEntryList.Add(entry);
+            return count;
+        }
+
+        using var connection = new SqlConnection(ConnectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        int totalCount;
+        using (var cmdCount = new SqlCommand($"[{DatabaseSchemaName}].[{DatabaseTableName}_FilteredCount]", connection))
+        {
+            cmdCount.CommandType = CommandType.StoredProcedure;
+            cmdCount.Parameters.Add(new SqlParameter("App", ApplicationName));
+            cmdCount.Parameters.Add(new SqlParameter("Type", (object)filter.Type ?? DBNull.Value));
+            cmdCount.Parameters.Add(new SqlParameter("Message", (object)filter.Message ?? DBNull.Value));
+            cmdCount.Parameters.Add(new SqlParameter("Host", (object)filter.Host ?? DBNull.Value));
+            cmdCount.Parameters.Add(new SqlParameter("User", (object)filter.User ?? DBNull.Value));
+            cmdCount.Parameters.Add(new SqlParameter("StatusCode", (object)filter.StatusCode ?? DBNull.Value));
+            cmdCount.Parameters.Add(new SqlParameter("From", (object)filter.From ?? DBNull.Value));
+            cmdCount.Parameters.Add(new SqlParameter("To", (object)filter.To ?? DBNull.Value));
+            cmdCount.Parameters.Add(new SqlParameter("IsReviewed", (object)filter.IsReviewed ?? DBNull.Value));
+
+            var countResult = await cmdCount.ExecuteScalarAsync(cancellationToken);
+            totalCount = Convert.ToInt32(countResult);
+        }
+
+        if (pageSize > 0)
+        {
+            var query = $@"
+SELECT ErrorId, AllXml, IsReviewed FROM [{DatabaseSchemaName}].[{DatabaseTableName}]
+WHERE Application = @Application
+  AND (@Type IS NULL OR Type LIKE '%' + @Type + '%')
+  AND (@Message IS NULL OR Message LIKE '%' + @Message + '%')
+  AND (@Host IS NULL OR Host LIKE '%' + @Host + '%')
+  AND (@User IS NULL OR [User] LIKE '%' + @User + '%')
+  AND (@StatusCode IS NULL OR StatusCode = @StatusCode)
+  AND (@From IS NULL OR TimeUtc >= @From)
+  AND (@To IS NULL OR TimeUtc <= @To)
+  AND (@IsReviewed IS NULL OR IsReviewed = @IsReviewed)
+ORDER BY [Sequence] DESC
+OFFSET @offset ROWS
+FETCH NEXT @limit ROWS ONLY;
+";
+            using var cmdFetch = new SqlCommand(query, connection);
+            cmdFetch.Parameters.Add(new SqlParameter("Application", ApplicationName));
+            cmdFetch.Parameters.Add(new SqlParameter("Type", (object)filter.Type ?? DBNull.Value));
+            cmdFetch.Parameters.Add(new SqlParameter("Message", (object)filter.Message ?? DBNull.Value));
+            cmdFetch.Parameters.Add(new SqlParameter("Host", (object)filter.Host ?? DBNull.Value));
+            cmdFetch.Parameters.Add(new SqlParameter("User", (object)filter.User ?? DBNull.Value));
+            cmdFetch.Parameters.Add(new SqlParameter("StatusCode", (object)filter.StatusCode ?? DBNull.Value));
+            cmdFetch.Parameters.Add(new SqlParameter("From", (object)filter.From ?? DBNull.Value));
+            cmdFetch.Parameters.Add(new SqlParameter("To", (object)filter.To ?? DBNull.Value));
+            cmdFetch.Parameters.Add(new SqlParameter("IsReviewed", (object)filter.IsReviewed ?? DBNull.Value));
+            cmdFetch.Parameters.Add(new SqlParameter("offset", errorIndex));
+            cmdFetch.Parameters.Add(new SqlParameter("limit", pageSize));
+
+            using var reader = await cmdFetch.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                var id = reader.GetGuid(0);
+                var xml = reader.GetString(1);
+                var isReviewedDb = reader.GetBoolean(2);
+                var error = ErrorXml.DecodeString(xml);
+                error.IsReviewed = isReviewedDb;
+                errorEntryList.Add(new ErrorLogEntry(this, id.ToString(), error));
+            }
+        }
+
+        return totalCount;
     }
 }

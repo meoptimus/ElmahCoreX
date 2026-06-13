@@ -58,6 +58,9 @@ jobs:
     runs-on: ubuntu-latest
     needs: [build]
     environment: nuget
+    permissions:
+      id-token: write
+      contents: read
     steps:
       - name: Setup .NET 10
         uses: actions/setup-dotnet@v4
@@ -69,8 +72,14 @@ jobs:
           name: nuget
           path: ${{ env.NUGET_DIR }}
 
+      - name: NuGet login (OIDC)
+        id: login
+        uses: NuGet/login@v1
+        with:
+          user: ${{ secrets.NUGET_USER }}
+
       - name: Publish to NuGet
         run: |
           foreach($file in (Get-ChildItem "${{ env.NUGET_DIR }}" -Recurse -Include *.nupkg)) {
-            dotnet nuget push $file --api-key "${{ secrets.NUGET_APIKEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
+            dotnet nuget push $file --api-key "${{ steps.login.outputs.NUGET_API_KEY }}" --source https://api.nuget.org/v3/index.json --skip-duplicate
           }

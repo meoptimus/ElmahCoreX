@@ -1,5 +1,8 @@
 using System;
 using System.Collections.Generic;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using JetBrains.Annotations;
 using Microsoft.Extensions.Options;
 using Npgsql;
@@ -71,7 +74,7 @@ public class PgsqlErrorLog : ErrorLog
 
         using var connection = new NpgsqlConnection(ConnectionString);
         using var command = Commands.LogError(id, ApplicationName, error.HostName, error.Type, error.Source,
-            error.Message, error.User, error.StatusCode, error.Time, errorXml);
+            error.Message, error.User, error.StatusCode, error.Time, errorXml, error.IsReviewed);
         command.Connection = connection;
         connection.Open();
         command.ExecuteNonQuery();
@@ -128,7 +131,9 @@ public class PgsqlErrorLog : ErrorLog
                 {
                     var id = reader.GetGuid(0);
                     var xml = reader.GetString(1);
+                    var isReviewed = reader.GetBoolean(2);
                     var error = ErrorXml.DecodeString(xml);
+                    error.IsReviewed = isReviewed;
                     errorEntryList.Add(new ErrorLogEntry(this, id.ToString(), error));
                 }
             }
@@ -149,15 +154,25 @@ public class PgsqlErrorLog : ErrorLog
         using var connection = new NpgsqlConnection(ConnectionString);
         connection.Open();
 
-        using var cmdCheck = Commands.CheckTable();
-        cmdCheck.Connection = connection;
-        // ReSharper disable once PossibleNullReferenceException
-        var exists = (bool)cmdCheck.ExecuteScalar();
+        using (var cmdCheck = Commands.CheckTable())
+        {
+            cmdCheck.Connection = connection;
+            var exists = (bool)cmdCheck.ExecuteScalar();
 
-        if (exists) return;
-        using var cmdCreate = Commands.CreateTable();
-        cmdCreate.Connection = connection;
-        cmdCreate.ExecuteNonQuery();
+            if (!exists)
+            {
+                using var cmdCreate = Commands.CreateTable();
+                cmdCreate.Connection = connection;
+                cmdCreate.ExecuteNonQuery();
+            }
+        }
+
+        // Run migrations
+        using (var cmdMigrate = Commands.CreateMigrations())
+        {
+            cmdMigrate.Connection = connection;
+            cmdMigrate.ExecuteNonQuery();
+        }
     }
 
     private static class Commands
@@ -221,14 +236,15 @@ CREATE INDEX IX_ELMAH_Error_App_Time_Seq ON ELMAH_Error USING BTREE
             string user,
             int statusCode,
             DateTime time,
-            string xml)
+            string xml,
+            bool isReviewed)
         {
             var command = new NpgsqlCommand();
             command.CommandText =
                 @"
 /* elmah */
-INSERT INTO Elmah_Error (ErrorId, Application, Host, Type, Source, Message, ""User"", StatusCode, TimeUtc, AllXml)
-VALUES (@ErrorId, @Application, @Host, @Type, @Source, @Message, @User, @StatusCode, @TimeUtc, @AllXml)
+INSERT INTO Elmah_Error (ErrorId, Application, Host, Type, Source, Message, ""User"", StatusCode, TimeUtc, AllXml, IsReviewed, ApplicationName)
+VALUES (@ErrorId, @Application, @Host, @Type, @Source, @Message, @User, @StatusCode, @TimeUtc, @AllXml, @IsReviewed, @ApplicationName)
 ";
             command.Parameters.Add(new NpgsqlParameter("ErrorId", id));
             command.Parameters.Add(new NpgsqlParameter("Application", appName));
@@ -240,6 +256,8 @@ VALUES (@ErrorId, @Application, @Host, @Type, @Source, @Message, @User, @StatusC
             command.Parameters.Add(new NpgsqlParameter("StatusCode", statusCode));
             command.Parameters.Add(new NpgsqlParameter("TimeUtc", time.ToUniversalTime()));
             command.Parameters.Add(new NpgsqlParameter("AllXml", xml));
+            command.Parameters.Add(new NpgsqlParameter("IsReviewed", isReviewed));
+            command.Parameters.Add(new NpgsqlParameter("ApplicationName", appName));
 
             return command;
         }
@@ -269,7 +287,7 @@ WHERE
 
             command.CommandText =
                 @"
-SELECT ErrorId, AllXml FROM Elmah_Error
+SELECT ErrorId, AllXml, IsReviewed FROM Elmah_Error
 WHERE
     Application = @Application
 ORDER BY Sequence DESC
@@ -291,5 +309,172 @@ LIMIT @limit
             command.Parameters.Add("@Application", NpgsqlDbType.Text, MaxAppNameLength).Value = appName;
             return command;
         }
+
+        public static NpgsqlCommand CreateMigrations()
+        {
+            var command = new NpgsqlCommand();
+            command.CommandText =
+                @"
+DO $$
+BEGIN
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'elmah_error' AND column_name = 'isreviewed') THEN
+        ALTER TABLE ELMAH_Error ADD COLUMN IsReviewed BOOLEAN NOT NULL DEFAULT FALSE;
+    END IF;
+    IF NOT EXISTS (SELECT 1 FROM information_schema.columns WHERE table_name = 'elmah_error' AND column_name = 'applicationname') THEN
+        ALTER TABLE ELMAH_Error ADD COLUMN ApplicationName VARCHAR(100) NULL;
+    END IF;
+END
+$$;
+
+CREATE INDEX IF NOT EXISTS IX_ELMAH_Error_Filtered ON ELMAH_Error (TimeUtc DESC, Application, StatusCode);
+";
+            return command;
+        }
+    }
+
+    public override async Task DeleteErrorsAsync(IEnumerable<string> errorIds, CancellationToken cancellationToken = default)
+    {
+        if (errorIds == null || !errorIds.Any()) return;
+
+        var guidList = errorIds.Select(id => new Guid(id)).ToList();
+
+        using var connection = new NpgsqlConnection(ConnectionString);
+        using var command = new NpgsqlCommand("DELETE FROM Elmah_Error WHERE Application = @Application AND ErrorId = ANY(@Ids)", connection);
+        command.Parameters.Add(new NpgsqlParameter("Application", ApplicationName));
+        command.Parameters.Add(new NpgsqlParameter("Ids", guidList));
+
+        await connection.OpenAsync(cancellationToken);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public override async Task DeleteAllErrorsAsync(string applicationName = null, CancellationToken cancellationToken = default)
+    {
+        var app = string.IsNullOrEmpty(applicationName) ? ApplicationName : applicationName;
+
+        using var connection = new NpgsqlConnection(ConnectionString);
+        using var command = new NpgsqlCommand("DELETE FROM Elmah_Error WHERE Application = @Application", connection);
+        command.Parameters.Add(new NpgsqlParameter("Application", app));
+
+        await connection.OpenAsync(cancellationToken);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public override async Task SetReviewedAsync(string id, bool isReviewed, CancellationToken cancellationToken = default)
+    {
+        if (string.IsNullOrEmpty(id)) return;
+        var errorGuid = new Guid(id);
+
+        using var connection = new NpgsqlConnection(ConnectionString);
+        using var command = new NpgsqlCommand("UPDATE Elmah_Error SET IsReviewed = @IsReviewed WHERE ErrorId = @ErrorId AND Application = @Application", connection);
+        command.Parameters.Add(new NpgsqlParameter("IsReviewed", isReviewed));
+        command.Parameters.Add(new NpgsqlParameter("ErrorId", errorGuid));
+        command.Parameters.Add(new NpgsqlParameter("Application", ApplicationName));
+
+        await connection.OpenAsync(cancellationToken);
+        await command.ExecuteNonQueryAsync(cancellationToken);
+    }
+
+    public override async Task<int> GetErrorsAsync(
+        int errorIndex, 
+        int pageSize, 
+        ICollection<ErrorLogEntry> errorEntryList, 
+        ErrorLogFilter filter, 
+        CancellationToken cancellationToken = default)
+    {
+        if (filter == null)
+        {
+            var entries = new List<ErrorLogEntry>();
+            var count = GetErrors(errorIndex, pageSize, entries);
+            foreach (var entry in entries) errorEntryList.Add(entry);
+            return count;
+        }
+
+        using var connection = new NpgsqlConnection(ConnectionString);
+        await connection.OpenAsync(cancellationToken);
+
+        // Build count query
+        var countQuery = "SELECT COUNT(*) FROM Elmah_Error WHERE Application = @Application";
+        var countCmd = new NpgsqlCommand(string.Empty, connection);
+        countCmd.Parameters.Add(new NpgsqlParameter("Application", ApplicationName));
+
+        var filterSql = BuildFilterSqlPg(filter, countCmd.Parameters);
+        countCmd.CommandText = countQuery + filterSql;
+
+        var countObj = await countCmd.ExecuteScalarAsync(cancellationToken);
+        var totalCount = Convert.ToInt32(countObj);
+
+        if (pageSize > 0)
+        {
+            var fetchQuery = "SELECT ErrorId, AllXml, IsReviewed FROM Elmah_Error WHERE Application = @Application" + filterSql;
+            fetchQuery += " ORDER BY Sequence DESC OFFSET @offset LIMIT @limit";
+
+            var fetchCmd = new NpgsqlCommand(fetchQuery, connection);
+            // Copy parameters to avoid adding duplicates
+            foreach (NpgsqlParameter p in countCmd.Parameters)
+            {
+                fetchCmd.Parameters.Add(p.Clone());
+            }
+            fetchCmd.Parameters.Add(new NpgsqlParameter("offset", errorIndex));
+            fetchCmd.Parameters.Add(new NpgsqlParameter("limit", pageSize));
+
+            using var reader = await fetchCmd.ExecuteReaderAsync(cancellationToken);
+            while (await reader.ReadAsync(cancellationToken))
+            {
+                var id = reader.GetGuid(0);
+                var xml = reader.GetString(1);
+                var isReviewedDb = reader.GetBoolean(2);
+                var error = ErrorXml.DecodeString(xml);
+                error.IsReviewed = isReviewedDb;
+                errorEntryList.Add(new ErrorLogEntry(this, id.ToString(), error));
+            }
+        }
+
+        return totalCount;
+    }
+
+    private string BuildFilterSqlPg(ErrorLogFilter filter, NpgsqlParameterCollection parameters)
+    {
+        var sql = "";
+        if (filter.Type != null)
+        {
+            sql += " AND Type ILIKE @Type";
+            parameters.Add(new NpgsqlParameter("Type", "%" + filter.Type + "%"));
+        }
+        if (filter.Message != null)
+        {
+            sql += " AND Message ILIKE @Message";
+            parameters.Add(new NpgsqlParameter("Message", "%" + filter.Message + "%"));
+        }
+        if (filter.Host != null)
+        {
+            sql += " AND Host ILIKE @Host";
+            parameters.Add(new NpgsqlParameter("Host", "%" + filter.Host + "%"));
+        }
+        if (filter.User != null)
+        {
+            sql += " AND \"User\" ILIKE @User";
+            parameters.Add(new NpgsqlParameter("User", "%" + filter.User + "%"));
+        }
+        if (filter.StatusCode.HasValue)
+        {
+            sql += " AND StatusCode = @StatusCode";
+            parameters.Add(new NpgsqlParameter("StatusCode", filter.StatusCode.Value));
+        }
+        if (filter.From.HasValue)
+        {
+            sql += " AND TimeUtc >= @From";
+            parameters.Add(new NpgsqlParameter("From", filter.From.Value.ToUniversalTime()));
+        }
+        if (filter.To.HasValue)
+        {
+            sql += " AND TimeUtc <= @To";
+            parameters.Add(new NpgsqlParameter("To", filter.To.Value.ToUniversalTime()));
+        }
+        if (filter.IsReviewed.HasValue)
+        {
+            sql += " AND IsReviewed = @IsReviewed";
+            parameters.Add(new NpgsqlParameter("IsReviewed", filter.IsReviewed.Value));
+        }
+        return sql;
     }
 }

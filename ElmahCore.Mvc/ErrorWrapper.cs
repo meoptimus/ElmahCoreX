@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text.RegularExpressions;
@@ -73,6 +73,8 @@ public class ErrorWrapper
     [XmlElement("Time")] public DateTime Time => _error.Time;
 
     [XmlElement("StatusCode")] public int? StatusCode => _error.StatusCode == 0 ? null : _error.StatusCode;
+
+    [XmlElement("IsReviewed")] public bool IsReviewed => _error.IsReviewed;
 
     [XmlIgnore] public string HtmlMessage { get; set; }
 

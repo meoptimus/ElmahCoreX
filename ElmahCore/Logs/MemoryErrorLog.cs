@@ -1,7 +1,9 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using System.Linq;
 using System.Threading;
+using System.Threading.Tasks;
 
 // ReSharper disable MemberCanBePrivate.Global
 
@@ -128,7 +130,7 @@ public sealed class MemoryErrorLog : ErrorLog
 
         try
         {
-            if (_entries == null)
+            if (_entries == null || !_entries.Contains(id))
                 return null;
 
             entry = _entries[id];
@@ -211,6 +213,145 @@ public sealed class MemoryErrorLog : ErrorLog
             }
 
         return totalCount;
+    }
+
+    public override Task DeleteErrorsAsync(IEnumerable<string> errorIds, CancellationToken cancellationToken = default)
+    {
+        Lock.EnterWriteLock();
+        try
+        {
+            if (_entries != null)
+            {
+                foreach (var id in errorIds)
+                {
+                    if (_entries.Contains(id))
+                    {
+                        _entries.Remove(id);
+                    }
+                }
+            }
+        }
+        finally
+        {
+            Lock.ExitWriteLock();
+        }
+        return Task.CompletedTask;
+    }
+
+    public override Task DeleteAllErrorsAsync(string applicationName = null, CancellationToken cancellationToken = default)
+    {
+        Lock.EnterWriteLock();
+        try
+        {
+            if (_entries != null)
+            {
+                if (string.IsNullOrEmpty(applicationName))
+                {
+                    _entries.Clear();
+                }
+                else
+                {
+                    var toRemove = new List<string>();
+                    foreach (var entry in _entries)
+                    {
+                        if (entry.Error.ApplicationName == applicationName)
+                        {
+                            toRemove.Add(entry.Id);
+                        }
+                    }
+                    foreach (var id in toRemove)
+                    {
+                        _entries.Remove(id);
+                    }
+                }
+            }
+        }
+        finally
+        {
+            Lock.ExitWriteLock();
+        }
+        return Task.CompletedTask;
+    }
+
+    public override Task SetReviewedAsync(string id, bool isReviewed, CancellationToken cancellationToken = default)
+    {
+        Lock.EnterWriteLock();
+        try
+        {
+            if (_entries != null && _entries.Contains(id))
+            {
+                _entries[id].Error.IsReviewed = isReviewed;
+            }
+        }
+        finally
+        {
+            Lock.ExitWriteLock();
+        }
+        return Task.CompletedTask;
+    }
+
+    public override Task<int> GetErrorsAsync(
+        int errorIndex, 
+        int pageSize, 
+        ICollection<ErrorLogEntry> errorEntryList, 
+        ErrorLogFilter filter, 
+        CancellationToken cancellationToken = default)
+    {
+        if (filter == null)
+        {
+            return GetErrorsAsync(errorIndex, pageSize, errorEntryList, cancellationToken);
+        }
+
+        Lock.EnterReadLock();
+        var matched = new List<ErrorLogEntry>();
+        try
+        {
+            if (_entries == null)
+                return Task.FromResult(0);
+
+            var all = _entries.OrderByDescending(e => e.Error.Time).ToList();
+
+            foreach (var entry in all)
+            {
+                var error = entry.Error;
+                if (filter.Application != null && !string.Equals(error.ApplicationName, filter.Application, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (filter.Host != null && !error.HostName.Contains(filter.Host, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (filter.Type != null && !error.Type.Contains(filter.Type, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (filter.Message != null && !error.Message.Contains(filter.Message, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (filter.User != null && !error.User.Contains(filter.User, StringComparison.OrdinalIgnoreCase))
+                    continue;
+                if (filter.StatusCode.HasValue && error.StatusCode != filter.StatusCode.Value)
+                    continue;
+                if (filter.IsReviewed.HasValue && error.IsReviewed != filter.IsReviewed.Value)
+                    continue;
+                if (filter.From.HasValue && error.Time < filter.From.Value)
+                    continue;
+                if (filter.To.HasValue && error.Time > filter.To.Value)
+                    continue;
+
+                matched.Add(entry);
+            }
+        }
+        finally
+        {
+            Lock.ExitReadLock();
+        }
+
+        if (errorEntryList != null)
+        {
+            var paged = matched.Skip(errorIndex).Take(pageSize);
+            foreach (var entry in paged)
+            {
+                var error = entry.Error.Clone();
+                errorEntryList.Add(new ErrorLogEntry(this, entry.Id, error));
+            }
+        }
+
+        return Task.FromResult(matched.Count);
     }
 
     private sealed class EntryCollection : KeyedCollection<string, ErrorLogEntry>

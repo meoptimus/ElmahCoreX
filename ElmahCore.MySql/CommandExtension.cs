@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using MySql.Data.MySqlClient;
 
 namespace ElmahCore.MySql;
@@ -67,14 +67,15 @@ public static class CommandExtension
         string user,
         int statusCode,
         DateTime time,
-        string xml)
+        string xml,
+        bool isReviewed)
     {
         var command = new MySqlCommand();
         command.CommandText =
             @"
             /* elmah */
-            INSERT INTO ELMAH_Error (ErrorId, Application, Host, Type, Source, Message, User, StatusCode, TimeUtc, AllXml)
-            VALUES (@ErrorId, @Application, @Host, @Type, @Source, @Message, @User, @StatusCode, @TimeUtc, @AllXml)
+            INSERT INTO ELMAH_Error (ErrorId, Application, Host, Type, Source, Message, User, StatusCode, TimeUtc, AllXml, IsReviewed, ApplicationName)
+            VALUES (@ErrorId, @Application, @Host, @Type, @Source, @Message, @User, @StatusCode, @TimeUtc, @AllXml, @IsReviewed, @ApplicationName)
             ";
 
         command.Parameters.Add(new MySqlParameter("ErrorId", id));
@@ -87,6 +88,8 @@ public static class CommandExtension
         command.Parameters.Add(new MySqlParameter("StatusCode", statusCode));
         command.Parameters.Add(new MySqlParameter("TimeUtc", time.ToUniversalTime()));
         command.Parameters.Add(new MySqlParameter("AllXml", xml));
+        command.Parameters.Add(new MySqlParameter("IsReviewed", isReviewed));
+        command.Parameters.Add(new MySqlParameter("ApplicationName", appName));
 
         return command;
     }
@@ -113,7 +116,7 @@ public static class CommandExtension
         var command = new MySqlCommand();
         command.CommandText =
             @"
-            SELECT ErrorId, AllXml FROM ELMAH_Error
+            SELECT ErrorId, AllXml, IsReviewed FROM ELMAH_Error
             WHERE
                 Application = @Application
             ORDER BY Sequence DESC
