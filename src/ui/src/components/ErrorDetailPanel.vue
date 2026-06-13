@@ -301,6 +301,32 @@
           </div>
         </div>
 
+        <!-- SQL Log Tab -->
+        <div v-if="activeTab === 'sqllog'" class="tab-pane">
+          <div class="sqllog-container">
+            <div v-if="sqlEntries && sqlEntries.length > 0">
+              <div v-for="(sqlEntry, idx) in sqlEntries" :key="idx" class="sql-card card mb-3">
+                <div class="sql-header">
+                  <div class="header-left">
+                    <span class="sql-command-type badge" :class="sqlEntry.commandType?.toLowerCase() === 'storedprocedure' ? 'badge-warning' : 'badge-primary'">
+                      {{ sqlEntry.commandType || 'SQL' }}
+                    </span>
+                    <span class="sql-duration font-bold ml-2" :class="sqlEntry.durationMs > 100 ? 'text-danger' : 'text-success'">
+                      {{ sqlEntry.durationMs }} ms
+                    </span>
+                  </div>
+                  <span class="sql-time text-light font-mono">{{ formatTime(sqlEntry.timeStamp) }}</span>
+                </div>
+                <pre class="sql-text font-mono"><code>{{ sqlEntry.sqlText }}</code></pre>
+              </div>
+            </div>
+            <div v-else class="empty-state">
+              <i class="pi pi-database empty-icon"></i>
+              <p>No SQL queries logged for this error.</p>
+            </div>
+          </div>
+        </div>
+
         <!-- 6. Raw XML Tab -->
         <div v-if="activeTab === 'rawxml'" class="tab-pane">
           <div class="xml-container">
@@ -357,8 +383,14 @@ const tabs = [
   { id: 'request', name: 'Request', icon: 'pi pi-envelope' },
   { id: 'body', name: 'Request Body', icon: 'pi pi-file' },
   { id: 'params', name: 'Parameters', icon: 'pi pi-bolt' },
+  { id: 'sqllog', name: 'SQL Log', icon: 'pi pi-database' },
   { id: 'rawxml', name: 'Raw XML', icon: 'pi pi-code' }
 ];
+
+const sqlEntries = computed(() => {
+  if (!error.value) return [];
+  return error.value.sqlLog || error.value.SqlLog || [];
+});
 
 // Prev/Next Navigation helpers
 const errorListIds = computed(() => store.errors.map(e => e.id));
@@ -912,5 +944,50 @@ html.dark-mode .status-code-badge.error {
   height: 18px;
   background: var(--border-color);
   border-radius: 4px;
+}
+
+/* SQL Log Tab Styling */
+.sql-card {
+  padding: 0 !important;
+  overflow: hidden;
+}
+
+.sql-header {
+  background-color: var(--bg-color);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+}
+
+.sql-text {
+  background-color: #1e293b;
+  color: #38bdf8;
+  padding: 1rem;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-size: 0.85rem;
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.badge-primary {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+}
+
+.badge-warning {
+  background-color: #fef3c7;
+  color: #d97706;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
 }
 </style>
