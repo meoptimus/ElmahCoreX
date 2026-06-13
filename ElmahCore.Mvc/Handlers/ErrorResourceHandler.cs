@@ -1,6 +1,6 @@
 using System;
-using System.Collections;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
@@ -14,15 +14,15 @@ internal static class ErrorResourceHandler
 
     public static async Task ProcessRequest(HttpContext context, string path, string elmahRoot)
     {
-        path = path.ToLower();
-
         var assembly = typeof(ErrorResourceHandler).GetTypeInfo().Assembly;
 
         var resName = $"{assembly.GetName().Name}.wwwroot.{path.Replace('/', '.').Replace('\\', '.')}";
+        var actualResName = ResourceNames.FirstOrDefault(r => string.Equals(r, resName, StringComparison.OrdinalIgnoreCase));
+
         if (!path.Contains('.'))
         {
-            resName = $"{assembly.GetName().Name}.wwwroot.index.html";
-            await using var stream2 = assembly.GetManifestResourceStream(resName);
+            var indexResName = $"{assembly.GetName().Name}.wwwroot.index.html";
+            await using var stream2 = assembly.GetManifestResourceStream(indexResName);
             using var reader = new StreamReader(stream2 ?? throw new InvalidOperationException());
             var html = await reader.ReadToEndAsync();
             html = html.Replace("/ELMAH_ROOT/", elmahRoot + "/").Replace("ELMAH_ROOT", elmahRoot);
@@ -31,7 +31,7 @@ internal static class ErrorResourceHandler
             return;
         }
 
-        if (!((IList) ResourceNames).Contains(resName))
+        if (actualResName == null)
         {
             context.Response.StatusCode = 404;
             return;
@@ -52,7 +52,7 @@ internal static class ErrorResourceHandler
             _ => context.Response.ContentType
         };
 
-        await using var resource = assembly.GetManifestResourceStream(resName);
+        await using var resource = assembly.GetManifestResourceStream(actualResName);
         if (resource != null) await resource.CopyToAsync(context.Response.Body);
     }
 }
