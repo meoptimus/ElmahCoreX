@@ -34,12 +34,19 @@ export const useErrorStore = defineStore('error', {
   },
 
   actions: {
-    async fetchErrors() {
+    async fetchErrors(append = false) {
       this.loading = true;
       try {
         const res = await elmahApi.getErrors(this.pageIndex, this.pageSize, this.filters);
         if (res.success && res.data) {
-          this.errors = res.data.errors || [];
+          const newErrors = res.data.errors || [];
+          if (append) {
+            const existingIds = new Set(this.errors.map(e => e.id));
+            const filteredNew = newErrors.filter(e => !existingIds.has(e.id));
+            this.errors.push(...filteredNew);
+          } else {
+            this.errors = newErrors;
+          }
           this.totalCount = res.data.totalCount || 0;
         }
         this.backendOnline = true;
@@ -48,6 +55,21 @@ export const useErrorStore = defineStore('error', {
         this.backendOnline = false;
       } finally {
         this.loading = false;
+      }
+    },
+
+    async refreshCurrentLoaded() {
+      try {
+        const pageSizeToLoad = this.errors.length || this.pageSize;
+        const res = await elmahApi.getErrors(0, pageSizeToLoad, this.filters);
+        if (res.success && res.data) {
+          this.errors = res.data.errors || [];
+          this.totalCount = res.data.totalCount || 0;
+        }
+        this.backendOnline = true;
+      } catch (err) {
+        console.error(err);
+        this.backendOnline = false;
       }
     },
 
@@ -138,7 +160,7 @@ export const useErrorStore = defineStore('error', {
       this.autoRefreshInterval = seconds;
       if (seconds > 0) {
         this.refreshTimer = setInterval(() => {
-          this.fetchErrors();
+          this.refreshCurrentLoaded();
           this.fetchCounts();
         }, seconds * 1000);
       }

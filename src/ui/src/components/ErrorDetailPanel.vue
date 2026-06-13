@@ -1,51 +1,57 @@
 <template>
-  <div class="error-detail-view">
-    <!-- Breadcrumb & Navigation -->
-    <div class="detail-header mb-4">
-      <div class="breadcrumb">
-        <router-link to="/" class="breadcrumb-link">Dashboard</router-link>
-        <span class="breadcrumb-separator"><i class="pi pi-chevron-right"></i></span>
-        <span class="breadcrumb-current">Error Detail</span>
+  <div class="error-detail-panel">
+    <!-- Panel Header with Navigation and Close Button -->
+    <div class="panel-header mb-4">
+      <div class="header-left">
+        <button class="btn btn-secondary btn-sm close-text-btn" @click="emit('close')" title="Close details">
+          <i class="pi pi-arrow-left mr-1"></i> Back to List
+        </button>
       </div>
 
-      <div class="detail-nav-buttons" v-if="errorListIds.length > 0">
-        <button 
-          class="btn btn-secondary btn-sm" 
-          :disabled="!hasPrev" 
-          @click="navigateError(prevId)"
-          title="Previous Error"
-        >
-          <i class="pi pi-chevron-left mr-1"></i> Prev
-        </button>
-        <span class="nav-position-text">
-          {{ currentIndex + 1 }} of {{ errorListIds.length }}
-        </span>
-        <button 
-          class="btn btn-secondary btn-sm" 
-          :disabled="!hasNext" 
-          @click="navigateError(nextId)"
-          title="Next Error"
-        >
-          Next <i class="pi pi-chevron-right ml-1"></i>
+      <div class="header-right-actions">
+        <div class="detail-nav-buttons mr-2" v-if="errorListIds.length > 0">
+          <button 
+            class="btn btn-secondary btn-sm btn-icon" 
+            :disabled="!hasPrev" 
+            @click="navigateError(prevId)"
+            title="Previous Error"
+          >
+            <i class="pi pi-chevron-left"></i>
+          </button>
+          <span class="nav-position-text">
+            {{ currentIndex + 1 }} of {{ errorListIds.length }}
+          </span>
+          <button 
+            class="btn btn-secondary btn-sm btn-icon" 
+            :disabled="!hasNext" 
+            @click="navigateError(nextId)"
+            title="Next Error"
+          >
+            <i class="pi pi-chevron-right"></i>
+          </button>
+        </div>
+
+        <button class="btn-close-x" @click="emit('close')" title="Close details">
+          <i class="pi pi-times"></i>
         </button>
       </div>
     </div>
 
     <!-- Quick Action Bar -->
     <div class="card action-bar mb-4" v-if="error">
-      <div class="action-left">
+      <div class="action-top">
         <span class="status-code-badge" :class="getSeverityClass(error.statusCode)">
           {{ error.statusCode || 'N/A' }}
         </span>
         <div class="error-meta">
           <h2 class="error-title">{{ getShortTypeName(error.type) }}</h2>
-          <p class="error-subtitle">{{ error.message }}</p>
+          <p class="error-subtitle font-mono">{{ error.message }}</p>
         </div>
       </div>
-      <div class="action-right">
+      <div class="action-buttons mt-3">
         <!-- Mark Reviewed Toggle -->
         <button 
-          class="btn" 
+          class="btn btn-sm" 
           :class="error.isReviewed ? 'btn-success' : 'btn-secondary'"
           @click="toggleReviewed"
         >
@@ -54,17 +60,17 @@
         </button>
 
         <!-- Copy GUID -->
-        <button class="btn btn-secondary" @click="copyToClipboard(props.id, 'Error ID copied!')" title="Copy Error GUID">
+        <button class="btn btn-secondary btn-sm" @click="copyToClipboard(props.id, 'Error ID copied!')" title="Copy Error GUID">
           <i class="pi pi-copy mr-1"></i> Copy GUID
         </button>
 
         <!-- Share -->
-        <button class="btn btn-secondary" @click="shareLink" title="Copy Share Link">
+        <button class="btn btn-secondary btn-sm" @click="shareLink" title="Copy Share Link">
           <i class="pi pi-share-alt mr-1"></i> Share
         </button>
 
         <!-- Delete -->
-        <button class="btn btn-danger" @click="deleteError">
+        <button class="btn btn-danger btn-sm" @click="deleteError">
           <i class="pi pi-trash mr-1"></i> Delete
         </button>
       </div>
@@ -320,12 +326,13 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue';
+import { ref, computed, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import { useErrorStore } from '../stores/errorStore';
 import { elmahApi } from '../api/elmahApi';
 import { useToast } from 'primevue/usetoast';
 import dayjs from 'dayjs';
+import axios from 'axios';
 
 const props = defineProps({
   id: {
@@ -333,6 +340,8 @@ const props = defineProps({
     required: true
   }
 });
+
+const emit = defineEmits(['close', 'deleted']);
 
 const store = useErrorStore();
 const router = useRouter();
@@ -360,6 +369,7 @@ const prevId = computed(() => hasPrev.value ? errorListIds.value[currentIndex.va
 const nextId = computed(() => hasNext.value ? errorListIds.value[currentIndex.value + 1] : null);
 
 const fetchErrorDetails = async (id) => {
+  if (!id) return;
   error.value = null;
   rawXml.value = '';
   try {
@@ -403,7 +413,7 @@ const deleteError = async () => {
     try {
       await elmahApi.deleteErrors([props.id]);
       toast.add({ severity: 'success', summary: 'Success', detail: 'Error deleted successfully', life: 3000 });
-      router.push('/');
+      emit('deleted', props.id);
     } catch (err) {
       console.error(err);
     }
@@ -462,24 +472,57 @@ const formatBody = (body) => {
 
 // Listen for route ID changes (prev/next navigation)
 watch(() => props.id, (newId) => {
-  fetchErrorDetails(newId);
+  if (newId) {
+    fetchErrorDetails(newId);
+  }
 }, { immediate: true });
-
-// Axios fallback for XML fetching (if not imported globally)
-import axios from 'axios';
 </script>
 
 <style scoped>
-.error-detail-view {
+.error-detail-panel {
   display: flex;
   flex-direction: column;
+  height: 100%;
+}
+
+.panel-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.header-right-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.btn-close-x {
+  background: none;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 0.5rem;
+  border-radius: 50%;
+  font-size: 1.2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+}
+
+.btn-close-x:hover {
+  background-color: var(--border-color);
+  color: var(--text-color);
 }
 
 .card {
   background-color: var(--panel-bg);
   border: 1px solid var(--border-color);
   border-radius: 12px;
-  padding: 1.5rem;
+  padding: 1.25rem;
   box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
 }
 
@@ -497,6 +540,10 @@ import axios from 'axios';
 
 .mr-1 {
   margin-right: 0.25rem;
+}
+
+.mr-2 {
+  margin-right: 0.5rem;
 }
 
 .ml-1 {
@@ -519,35 +566,6 @@ import axios from 'axios';
   word-break: break-all;
 }
 
-/* Header & Breadcrumb */
-.detail-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.breadcrumb {
-  display: flex;
-  align-items: center;
-  font-size: 0.9rem;
-  color: var(--text-light);
-}
-
-.breadcrumb-link {
-  color: var(--primary-color);
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.breadcrumb-link:hover {
-  text-decoration: underline;
-}
-
-.breadcrumb-separator {
-  margin: 0 0.5rem;
-  font-size: 0.75rem;
-}
-
 .detail-nav-buttons {
   display: flex;
   align-items: center;
@@ -562,15 +580,13 @@ import axios from 'axios';
 /* Action Bar Card */
 .action-bar {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
+  flex-direction: column;
   border-left: 4px solid var(--error-color);
 }
 
-.action-left {
+.action-top {
   display: flex;
-  align-items: center;
+  align-items: flex-start;
   gap: 1rem;
 }
 
@@ -579,6 +595,8 @@ import axios from 'axios';
   border-radius: 8px;
   font-size: 1.15rem;
   font-weight: 800;
+  min-width: 60px;
+  text-align: center;
 }
 
 .status-code-badge.error {
@@ -604,31 +622,36 @@ html.dark-mode .status-code-badge.error {
 .error-meta {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
 }
 
 .error-title {
   margin: 0 0 0.25rem 0;
-  font-size: 1.25rem;
+  font-size: 1.15rem;
   font-weight: 700;
+  word-break: break-all;
 }
 
 .error-subtitle {
   margin: 0;
   color: var(--text-light);
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   line-height: 1.4;
+  word-break: break-word;
 }
 
-.action-right {
+.action-buttons {
   display: flex;
+  flex-wrap: wrap;
   gap: 0.5rem;
 }
 
 .btn {
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.8rem;
   border-radius: 8px;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.85rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -637,9 +660,16 @@ html.dark-mode .status-code-badge.error {
   transition: all 0.2s;
 }
 
+.btn-icon {
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border-radius: 6px;
+}
+
 .btn-sm {
-  padding: 0.35rem 0.75rem;
-  font-size: 0.8rem;
+  padding: 0.3rem 0.6rem;
+  font-size: 0.775rem;
   border-radius: 6px;
 }
 
@@ -667,6 +697,9 @@ html.dark-mode .status-code-badge.error {
 .detail-card {
   padding: 0;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
 }
 
 .tabs-nav {
@@ -680,11 +713,11 @@ html.dark-mode .status-code-badge.error {
 .tab-btn {
   background: none;
   border: none;
-  padding: 1rem 1.25rem;
+  padding: 0.75rem 1rem;
   color: var(--text-light);
   cursor: pointer;
   font-weight: 600;
-  font-size: 0.9rem;
+  font-size: 0.85rem;
   border-bottom: 2px solid transparent;
   transition: all 0.2s;
   display: flex;
@@ -702,22 +735,24 @@ html.dark-mode .status-code-badge.error {
 }
 
 .tab-content {
-  padding: 1.5rem;
+  padding: 1.25rem;
+  overflow-y: auto;
+  flex: 1;
 }
 
 /* Overview Info Grid */
 .info-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.25rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
 }
 
 .info-item {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 0.2rem;
   border-bottom: 1px solid var(--border-color);
-  padding-bottom: 0.75rem;
+  padding-bottom: 0.5rem;
 }
 
 .info-item:last-child {
@@ -726,14 +761,14 @@ html.dark-mode .status-code-badge.error {
 }
 
 .info-label {
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
   color: var(--text-light);
   text-transform: uppercase;
 }
 
 .info-value {
-  font-size: 0.95rem;
+  font-size: 0.9rem;
   color: var(--text-color);
   word-break: break-word;
 }
@@ -741,9 +776,9 @@ html.dark-mode .status-code-badge.error {
 .method-tag {
   background-color: var(--primary-color);
   color: white;
-  padding: 0.1rem 0.4rem;
+  padding: 0.1rem 0.3rem;
   border-radius: 4px;
-  font-size: 0.75rem;
+  font-size: 0.7rem;
   font-weight: 700;
   margin-right: 0.5rem;
 }
@@ -752,22 +787,22 @@ html.dark-mode .status-code-badge.error {
 .stacktrace-container {
   background-color: #0f172a;
   color: #f1f5f9;
-  padding: 1.5rem;
+  padding: 1rem;
   border-radius: 8px;
   overflow: auto;
-  max-height: 500px;
+  max-height: 400px;
 }
 
 .stacktrace-raw {
   margin: 0;
   font-family: SFMono-Regular, Consolas, Monaco, monospace;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   white-space: pre-wrap;
 }
 
 :deep(.stacktrace-html) {
   font-family: SFMono-Regular, Consolas, Monaco, monospace;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   line-height: 1.5;
   white-space: pre-wrap;
 }
@@ -798,7 +833,7 @@ html.dark-mode .status-code-badge.error {
   padding: 1rem;
   background-color: #1e293b;
   color: #e2e8f0;
-  font-size: 0.825rem;
+  font-size: 0.8rem;
   overflow-x: auto;
 }
 
@@ -806,12 +841,12 @@ html.dark-mode .status-code-badge.error {
 .data-table {
   width: 100%;
   border-collapse: collapse;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
 }
 
 .data-table th,
 .data-table td {
-  padding: 0.5rem 0.75rem;
+  padding: 0.4rem 0.6rem;
   border-bottom: 1px solid var(--border-color);
 }
 
@@ -832,7 +867,7 @@ html.dark-mode .status-code-badge.error {
 
 .body-raw {
   margin: 0;
-  font-size: 0.85rem;
+  font-size: 0.8rem;
   white-space: pre-wrap;
   word-break: break-all;
 }
@@ -842,7 +877,7 @@ html.dark-mode .status-code-badge.error {
 }
 
 .param-header {
-  padding: 0.5rem 1rem;
+  padding: 0.4rem 0.8rem;
   background-color: var(--bg-color);
   border-bottom: 1px solid var(--border-color);
   display: flex;
@@ -855,8 +890,8 @@ html.dark-mode .status-code-badge.error {
   padding: 1rem;
   border-radius: 8px;
   overflow: auto;
-  max-height: 400px;
-  font-size: 0.825rem;
+  max-height: 350px;
+  font-size: 0.8rem;
   white-space: pre-wrap;
 }
 
@@ -867,14 +902,14 @@ html.dark-mode .status-code-badge.error {
 }
 
 .skeleton-title {
-  height: 30px;
+  height: 25px;
   width: 40%;
   background: var(--border-color);
   border-radius: 4px;
 }
 
 .skeleton-para {
-  height: 20px;
+  height: 18px;
   background: var(--border-color);
   border-radius: 4px;
 }

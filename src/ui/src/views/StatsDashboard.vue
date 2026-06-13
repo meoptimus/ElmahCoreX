@@ -130,7 +130,8 @@ const unreviewedCount = computed(() => {
 const topExceptionName = computed(() => {
   const counts = {};
   errors.value.forEach(e => {
-    counts[e.error.type] = (counts[e.error.type] || 0) + 1;
+    const type = e.error.type || 'Unknown';
+    counts[type] = (counts[type] || 0) + 1;
   });
   const sorted = Object.entries(counts).sort((a, b) => b[1] - a[1]);
   return sorted.length > 0 ? sorted[0][0] : 'None';
@@ -178,12 +179,14 @@ const loadStatsData = async () => {
       errors.value = res.data.errors || [];
     }
 
+    // Set loading to false so that v-else DOM elements (canvases) are rendered
+    loading.value = false;
+
     // Render charts
     await nextTick();
     renderCharts();
   } catch (err) {
     console.error('Error loading statistics', err);
-  } finally {
     loading.value = false;
   }
 };
@@ -233,7 +236,8 @@ const renderCharts = () => {
   // 2. Exception Types Top Bar Chart
   const typeCounts = {};
   errors.value.forEach(e => {
-    const shortName = e.error.type.split('.').pop();
+    const type = e.error.type || 'Unknown';
+    const shortName = type.split('.').pop();
     typeCounts[shortName] = (typeCounts[shortName] || 0) + 1;
   });
   const topTypes = Object.entries(typeCounts)

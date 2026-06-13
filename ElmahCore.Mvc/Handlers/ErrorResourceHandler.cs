@@ -52,6 +52,16 @@ internal static class ErrorResourceHandler
             _ => context.Response.ContentType
         };
 
+        if (ext == ".css" || ext == ".js")
+        {
+            await using var stream = assembly.GetManifestResourceStream(actualResName);
+            using var reader = new StreamReader(stream ?? throw new InvalidOperationException());
+            var content = await reader.ReadToEndAsync();
+            content = content.Replace("/ELMAH_ROOT/", elmahRoot + "/").Replace("ELMAH_ROOT", elmahRoot);
+            await context.Response.WriteAsync(content);
+            return;
+        }
+
         await using var resource = assembly.GetManifestResourceStream(actualResName);
         if (resource != null) await resource.CopyToAsync(context.Response.Body);
     }

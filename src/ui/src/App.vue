@@ -7,49 +7,36 @@
     </div>
 
     <div class="layout-wrapper">
-      <!-- Sidebar Navigation -->
-      <aside class="app-sidebar" :class="{ 'collapsed': isSidebarCollapsed }">
-        <div class="sidebar-header">
-          <div class="logo">
-            <i class="pi pi-shield logo-icon"></i>
-            <span class="logo-text" v-if="!isSidebarCollapsed">ElmahCoreX</span>
-          </div>
-          <button class="collapse-btn" @click="toggleSidebar">
-            <i :class="isSidebarCollapsed ? 'pi pi-chevron-right' : 'pi pi-chevron-left'"></i>
-          </button>
-        </div>
-
-        <nav class="sidebar-nav">
-          <router-link to="/" class="nav-item" active-class="active">
-            <i class="pi pi-list nav-icon"></i>
-            <span class="nav-text" v-if="!isSidebarCollapsed">Errors</span>
-            <span v-if="!isSidebarCollapsed && store.totalFiltered > 0" class="badge">
-              {{ store.totalFiltered }}
-            </span>
-          </router-link>
-
-          <router-link to="/stats" class="nav-item" active-class="active">
-            <i class="pi pi-chart-bar nav-icon"></i>
-            <span class="nav-text" v-if="!isSidebarCollapsed">Statistics</span>
-          </router-link>
-
-          <router-link to="/settings" class="nav-item" active-class="active">
-            <i class="pi pi-cog nav-icon"></i>
-            <span class="nav-text" v-if="!isSidebarCollapsed">Settings</span>
-          </router-link>
-        </nav>
-
-        <div class="sidebar-footer" v-if="!isSidebarCollapsed">
-          <span class="version-text">v3.0.0</span>
-        </div>
-      </aside>
-
       <!-- Main Content Area -->
       <div class="main-layout">
         <!-- Top bar header -->
         <header class="main-header">
           <div class="header-left">
-            <h1 class="page-title">{{ currentRouteName }}</h1>
+            <div class="logo">
+              <i class="pi pi-shield logo-icon"></i>
+              <span class="logo-text">ElmahCoreX</span>
+            </div>
+
+            <!-- Top Navigation links -->
+            <nav class="top-nav">
+              <router-link to="/" class="nav-item" active-class="active">
+                <i class="pi pi-list nav-icon"></i>
+                <span class="nav-text">Errors</span>
+                <span v-if="store.totalFiltered > 0" class="badge">
+                  {{ store.totalFiltered }}
+                </span>
+              </router-link>
+
+              <router-link to="/stats" class="nav-item" active-class="active">
+                <i class="pi pi-chart-bar nav-icon"></i>
+                <span class="nav-text">Statistics</span>
+              </router-link>
+
+              <router-link to="/settings" class="nav-item" active-class="active">
+                <i class="pi pi-cog nav-icon"></i>
+                <span class="nav-text">Settings</span>
+              </router-link>
+            </nav>
           </div>
           <div class="header-right">
             <!-- Environment Badge -->
@@ -77,6 +64,8 @@
             <button class="icon-btn" title="Toggle Dark/Light Mode" @click="toggleDarkMode">
               <i :class="isDarkMode ? 'pi pi-sun' : 'pi pi-moon'"></i>
             </button>
+
+            <span class="version-tag">v3.0.0</span>
           </div>
         </header>
 
@@ -104,15 +93,6 @@ const store = useErrorStore();
 const route = useRoute();
 
 const isDarkMode = ref(localStorage.getItem('theme') === 'dark');
-const isSidebarCollapsed = ref(localStorage.getItem('sidebar_collapsed') === 'true');
-
-const currentRouteName = computed(() => {
-  if (route.name === 'errors') return 'Logged Errors';
-  if (route.name === 'detail') return 'Error Details';
-  if (route.name === 'stats') return 'Dashboard Analytics';
-  if (route.name === 'settings') return 'Application Settings';
-  return 'Dashboard';
-});
 
 const envType = computed(() => {
   const host = window.location.hostname;
@@ -135,11 +115,6 @@ const updateThemeClass = () => {
   }
 };
 
-const toggleSidebar = () => {
-  isSidebarCollapsed.value = !isSidebarCollapsed.value;
-  localStorage.setItem('sidebar_collapsed', isSidebarCollapsed.value ? 'true' : 'false');
-};
-
 const changeAutoRefresh = (event) => {
   const val = parseInt(event.target.value, 10);
   store.startAutoRefresh(val);
@@ -154,7 +129,6 @@ const refreshCurrent = () => {
 // Keyboard Shortcuts Listener
 const handleKeyDown = (e) => {
   if (e.key === 'r' || e.key === 'R') {
-    // If not focused on an input element
     if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT' && document.activeElement.tagName !== 'TEXTAREA') {
       refreshCurrent();
     }
@@ -232,7 +206,7 @@ body {
   overflow: hidden;
 }
 
-/* Global App Grid Layout */
+/* Global App Layout */
 .app-container {
   display: flex;
   flex-direction: column;
@@ -259,114 +233,6 @@ body {
   overflow: hidden;
 }
 
-/* Sidebar Styling */
-.app-sidebar {
-  width: 240px;
-  background-color: var(--panel-bg);
-  border-right: 1px solid var(--border-color);
-  display: flex;
-  flex-direction: column;
-  transition: width 0.2s ease;
-  z-index: 100;
-}
-
-.app-sidebar.collapsed {
-  width: 70px;
-}
-
-.sidebar-header {
-  height: 64px;
-  padding: 0 1rem;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.logo {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-weight: 700;
-  font-size: 1.25rem;
-  color: var(--primary-color);
-}
-
-.logo-icon {
-  font-size: 1.5rem;
-}
-
-.collapse-btn {
-  background: none;
-  border: none;
-  color: var(--text-light);
-  cursor: pointer;
-  padding: 0.25rem;
-  border-radius: 4px;
-}
-
-.collapse-btn:hover {
-  background-color: var(--primary-light);
-  color: var(--primary-color);
-}
-
-.sidebar-nav {
-  padding: 1rem 0.5rem;
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  flex: 1;
-}
-
-.nav-item {
-  display: flex;
-  align-items: center;
-  padding: 0.75rem 0.75rem;
-  gap: 0.75rem;
-  color: var(--text-light);
-  text-decoration: none;
-  border-radius: 8px;
-  font-weight: 500;
-  transition: all 0.2s;
-  position: relative;
-}
-
-.nav-item:hover {
-  background-color: var(--bg-color);
-  color: var(--text-color);
-}
-
-.nav-item.active {
-  background-color: var(--primary-light);
-  color: var(--primary-color);
-}
-
-.nav-icon {
-  font-size: 1.15rem;
-}
-
-.badge {
-  background-color: var(--error-color);
-  color: white;
-  padding: 0.15rem 0.4rem;
-  border-radius: 12px;
-  font-size: 0.75rem;
-  font-weight: 600;
-  position: absolute;
-  right: 0.5rem;
-}
-
-.sidebar-footer {
-  padding: 1rem;
-  border-top: 1px solid var(--border-color);
-  text-align: center;
-}
-
-.version-text {
-  font-size: 0.75rem;
-  color: var(--text-light);
-}
-
 /* Main Layout & Header */
 .main-layout {
   display: flex;
@@ -385,10 +251,67 @@ body {
   padding: 0 1.5rem;
 }
 
-.page-title {
-  font-size: 1.25rem;
-  margin: 0;
+.header-left {
+  display: flex;
+  align-items: center;
+  gap: 2.5rem;
+}
+
+.logo {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
   font-weight: 700;
+  font-size: 1.25rem;
+  color: var(--primary-color);
+}
+
+.logo-icon {
+  font-size: 1.5rem;
+}
+
+.top-nav {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.nav-item {
+  display: flex;
+  align-items: center;
+  padding: 0.5rem 0.85rem;
+  gap: 0.5rem;
+  color: var(--text-light);
+  text-decoration: none;
+  border-radius: 8px;
+  font-weight: 600;
+  font-size: 0.9rem;
+  transition: all 0.2s;
+  position: relative;
+}
+
+.nav-item:hover {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+}
+
+.nav-item.active {
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+}
+
+.nav-icon {
+  font-size: 1rem;
+}
+
+.badge {
+  background-color: var(--error-color);
+  color: white;
+  padding: 0.15rem 0.4rem;
+  border-radius: 12px;
+  font-size: 0.7rem;
+  font-weight: 700;
+  margin-left: 0.25rem;
 }
 
 .header-right {
@@ -455,10 +378,27 @@ body {
   color: var(--text-color);
 }
 
+.version-tag {
+  font-size: 0.75rem;
+  color: var(--text-light);
+  border-left: 1px solid var(--border-color);
+  padding-left: 0.75rem;
+}
+
 .content-body {
   flex: 1;
-  overflow: auto;
+  overflow: hidden;
   padding: 1.5rem;
+  display: flex;
+  flex-direction: column;
+}
+
+.stats-dashboard-view,
+.settings-view {
+  overflow-y: auto;
+  flex: 1;
+  height: 100%;
+  padding-right: 0.25rem;
 }
 
 /* Page Transition Animations */
@@ -470,5 +410,20 @@ body {
 .fade-enter-from,
 .fade-leave-to {
   opacity: 0;
+}
+
+@media (max-width: 768px) {
+  .logo-text, .version-tag {
+    display: none;
+  }
+  .header-left {
+    gap: 1rem;
+  }
+  .nav-text {
+    display: none;
+  }
+  .nav-item {
+    padding: 0.5rem;
+  }
 }
 </style>

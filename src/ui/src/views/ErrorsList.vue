@@ -1,234 +1,330 @@
 <template>
   <div class="errors-list-view">
-    <!-- Filter Toggle Bar & Quick Filters -->
-    <div class="actions-panel mb-4">
-      <div class="search-box">
-        <i class="pi pi-search search-icon"></i>
-        <input 
-          type="text" 
-          placeholder="Search by message or type..." 
-          v-model="searchTerm" 
-          @input="onSearchInput"
-        />
-        <button v-if="searchTerm" class="clear-search" @click="clearSearch">
-          <i class="pi pi-times"></i>
-        </button>
-      </div>
-
-      <div class="btn-group">
-        <button 
-          class="btn btn-secondary" 
-          :class="{ 'active': showFilters }"
-          @click="showFilters = !showFilters"
-        >
-          <i class="pi pi-filter mr-1"></i>
-          Filters
-          <span v-if="store.hasActiveFilters" class="active-dot"></span>
-        </button>
-
-        <button 
-          class="btn btn-danger" 
-          @click="confirmDeleteAll"
-        >
-          <i class="pi pi-trash mr-1"></i>
-          Clear All Logs
-        </button>
-      </div>
-    </div>
-
-    <!-- Collapsible Advanced Filters -->
-    <transition name="slide-down">
-      <div v-if="showFilters" class="filters-card card mb-4">
-        <div class="filters-grid">
-          <div class="filter-field">
-            <label>Host</label>
-            <input type="text" v-model="filterHost" @change="updateFilter('host', filterHost)" placeholder="e.g. localhost" />
+    <div class="split-container">
+      <!-- Left side: List pane -->
+      <div 
+        class="list-pane" 
+        :class="{ 'has-detail': selectedErrorId }"
+      >
+        <!-- Filter Toggle Bar & Quick Filters -->
+        <div class="actions-panel mb-4">
+          <div class="search-box">
+            <i class="pi pi-search search-icon"></i>
+            <input 
+              type="text" 
+              placeholder="Search by message or type..." 
+              v-model="searchTerm" 
+              @input="onSearchInput"
+            />
+            <button v-if="searchTerm" class="clear-search" @click="clearSearch">
+              <i class="pi pi-times"></i>
+            </button>
           </div>
 
-          <div class="filter-field">
-            <label>User</label>
-            <input type="text" v-model="filterUser" @change="updateFilter('user', filterUser)" placeholder="Username" />
-          </div>
+          <div class="btn-group">
+            <button 
+              class="btn btn-secondary" 
+              :class="{ 'active': showFilters }"
+              @click="showFilters = !showFilters"
+            >
+              <i class="pi pi-filter mr-1"></i>
+              Filters
+              <span v-if="store.hasActiveFilters" class="active-dot"></span>
+            </button>
 
-          <div class="filter-field">
-            <label>Exception Type</label>
-            <input type="text" v-model="filterType" @change="updateFilter('type', filterType)" placeholder="e.g. NullReferenceException" />
-          </div>
-
-          <div class="filter-field">
-            <label>Status Code</label>
-            <input type="number" v-model="filterStatusCode" @change="updateFilter('statusCode', filterStatusCode)" placeholder="e.g. 500" />
-          </div>
-
-          <div class="filter-field">
-            <label>Review Status</label>
-            <select v-model="filterIsReviewed" @change="updateFilter('isReviewed', filterIsReviewed)">
-              <option value="">All Statuses</option>
-              <option value="false">Unreviewed / Open</option>
-              <option value="true">Reviewed</option>
-            </select>
-          </div>
-
-          <div class="filter-field">
-            <label>Application</label>
-            <input type="text" v-model="filterApplication" @change="updateFilter('application', filterApplication)" placeholder="App Name" />
-          </div>
-
-          <div class="filter-field">
-            <label>Date From</label>
-            <input type="date" v-model="filterFrom" @change="updateFilter('from', filterFrom)" />
-          </div>
-
-          <div class="filter-field">
-            <label>Date To</label>
-            <input type="date" v-model="filterTo" @change="updateFilter('to', filterTo)" />
+            <button 
+              class="btn btn-danger" 
+              @click="confirmDeleteAll"
+            >
+              <i class="pi pi-trash mr-1"></i>
+              Clear All Logs
+            </button>
           </div>
         </div>
 
-        <div class="filters-footer">
-          <button class="btn btn-sm btn-text" @click="resetFilters">Reset Filters</button>
-        </div>
-      </div>
-    </transition>
+        <!-- Collapsible Advanced Filters -->
+        <transition name="slide-down">
+          <div v-if="showFilters" class="filters-card card mb-4">
+            <div class="filters-grid">
+              <div class="filter-field">
+                <label>Host</label>
+                <input type="text" v-model="filterHost" @change="updateFilter('host', filterHost)" placeholder="e.g. localhost" />
+              </div>
 
-    <!-- Bulk Actions Toolbar -->
-    <transition name="fade">
-      <div v-if="store.selectedIds.length > 0" class="bulk-toolbar">
-        <span class="selected-count">
-          {{ store.selectedIds.length }} items selected
-        </span>
-        <div class="bulk-actions">
-          <button class="btn btn-sm btn-success mr-2" @click="bulkMarkReviewed(true)">
-            <i class="pi pi-check mr-1"></i> Mark Reviewed
-          </button>
-          <button class="btn btn-sm btn-secondary mr-2" @click="bulkMarkReviewed(false)">
-            <i class="pi pi-times-circle mr-1"></i> Mark Unreviewed
-          </button>
-          <button class="btn btn-sm btn-danger" @click="bulkDelete">
-            <i class="pi pi-trash mr-1"></i> Delete Selected
-          </button>
-        </div>
-      </div>
-    </transition>
+              <div class="filter-field">
+                <label>User</label>
+                <input type="text" v-model="filterUser" @change="updateFilter('user', filterUser)" placeholder="Username" />
+              </div>
 
-    <!-- Error Logs Table -->
-    <div class="card table-card">
-      <div v-if="store.loading" class="skeleton-container">
-        <div v-for="i in 5" :key="i" class="skeleton-row"></div>
-      </div>
+              <div class="filter-field">
+                <label>Exception Type</label>
+                <input type="text" v-model="filterType" @change="updateFilter('type', filterType)" placeholder="e.g. NullReferenceException" />
+              </div>
 
-      <div v-else-if="store.errors.length === 0" class="empty-state">
-        <i class="pi pi-check-circle empty-icon text-success"></i>
-        <h3>All Clear!</h3>
-        <p>No logged errors matching the current filter criteria.</p>
-      </div>
+              <div class="filter-field">
+                <label>Status Code</label>
+                <input type="number" v-model="filterStatusCode" @change="updateFilter('statusCode', filterStatusCode)" placeholder="e.g. 500" />
+              </div>
 
-      <div v-else class="table-responsive">
-        <table class="errors-table">
-          <thead>
-            <tr>
-              <th width="40">
-                <input 
-                  type="checkbox" 
-                  :checked="isAllSelected" 
-                  @change="toggleSelectAll"
-                />
-              </th>
-              <th width="90">Severity</th>
-              <th width="80">Code</th>
-              <th>Error Details</th>
-              <th width="150">Host</th>
-              <th width="120">User</th>
-              <th width="180">Time</th>
-              <th width="130">Reviewed</th>
-              <th width="100">Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            <tr 
+              <div class="filter-field">
+                <label>Review Status</label>
+                <select v-model="filterIsReviewed" @change="updateFilter('isReviewed', filterIsReviewed)">
+                  <option value="">All Statuses</option>
+                  <option value="false">Unreviewed / Open</option>
+                  <option value="true">Reviewed</option>
+                </select>
+              </div>
+
+              <div class="filter-field">
+                <label>Application</label>
+                <input type="text" v-model="filterApplication" @change="updateFilter('application', filterApplication)" placeholder="App Name" />
+              </div>
+
+              <div class="filter-field">
+                <label>Date From</label>
+                <input type="date" v-model="filterFrom" @change="updateFilter('from', filterFrom)" />
+              </div>
+
+              <div class="filter-field">
+                <label>Date To</label>
+                <input type="date" v-model="filterTo" @change="updateFilter('to', filterTo)" />
+              </div>
+            </div>
+
+            <div class="filters-footer">
+              <button class="btn btn-sm btn-text" @click="resetFilters">Reset Filters</button>
+            </div>
+          </div>
+        </transition>
+
+        <!-- Bulk Actions Toolbar -->
+        <transition name="fade">
+          <div v-if="store.selectedIds.length > 0" class="bulk-toolbar">
+            <span class="selected-count">
+              {{ store.selectedIds.length }} items selected
+            </span>
+            <div class="bulk-actions">
+              <button class="btn btn-sm btn-success mr-2" @click="bulkMarkReviewed(true)">
+                <i class="pi pi-check mr-1"></i> Mark Reviewed
+              </button>
+              <button class="btn btn-sm btn-secondary mr-2" @click="bulkMarkReviewed(false)">
+                <i class="pi pi-times-circle mr-1"></i> Mark Unreviewed
+              </button>
+              <button class="btn btn-sm btn-danger" @click="bulkDelete">
+                <i class="pi pi-trash mr-1"></i> Delete Selected
+              </button>
+            </div>
+          </div>
+        </transition>
+
+        <!-- Error Logs Table / Cards List -->
+        <div class="card table-card" :class="{ 'cards-only-card': selectedErrorId }">
+          <div v-if="store.loading && store.errors.length === 0" class="skeleton-container">
+            <div v-for="i in 5" :key="i" class="skeleton-row"></div>
+          </div>
+
+          <div v-else-if="store.errors.length === 0" class="empty-state">
+            <i class="pi pi-check-circle empty-icon text-success"></i>
+            <h3>All Clear!</h3>
+            <p>No logged errors matching the current filter criteria.</p>
+          </div>
+
+          <!-- Cards List (Side-bar mode when details pane is open) -->
+          <div v-else-if="selectedErrorId" class="error-cards-list" ref="cardsListRef">
+            <div 
               v-for="entry in store.errors" 
               :key="entry.id" 
-              :class="{ 'reviewed-row': entry.error.isReviewed, 'selected-row': store.selectedIds.includes(entry.id) }"
+              class="error-card"
+              :class="{ 
+                'active-card': entry.id === selectedErrorId, 
+                'reviewed-card': entry.error.isReviewed 
+              }"
+              @click="viewDetails(entry.id)"
             >
-              <td>
-                <input 
-                  type="checkbox" 
-                  :value="entry.id" 
-                  v-model="store.selectedIds"
-                />
-              </td>
-              <td>
-                <span class="severity-badge" :class="getSeverityClass(entry.error.statusCode)">
-                  {{ getSeverityText(entry.error.statusCode) }}
-                </span>
-              </td>
-              <td class="font-mono text-center font-bold">
-                {{ entry.error.statusCode || 'N/A' }}
-              </td>
-              <td class="error-summary-cell" @click="viewDetails(entry.id)">
-                <div class="error-type">{{ getShortTypeName(entry.error.type) }}</div>
-                <div class="error-message" :title="entry.error.message">
-                  {{ truncate(entry.error.message, 120) }}
+              <div class="card-header">
+                <div class="card-left">
+                  <input 
+                    type="checkbox" 
+                    :checked="store.selectedIds.includes(entry.id)"
+                    @change="toggleItemSelection(entry.id)"
+                    @click.stop
+                  />
+                  <!-- Subtle status indicator code (no severity badge focus) -->
+                  <span class="status-code-subtle" :class="getSeverityClass(entry.error.statusCode)">
+                    {{ entry.error.statusCode || 'N/A' }}
+                  </span>
+                  <span class="error-type-title">{{ getShortTypeName(entry.error.type) }}</span>
                 </div>
-              </td>
-              <td class="text-light font-mono">{{ entry.error.hostName || 'N/A' }}</td>
-              <td class="text-light">{{ entry.error.user || 'N/A' }}</td>
-              <td class="text-light font-mono">{{ formatTime(entry.error.time) }}</td>
-              <td>
-                <button 
-                  class="reviewed-toggle-btn"
-                  :class="{ 'is-reviewed': entry.error.isReviewed }"
-                  @click="store.toggleReview(entry.id, !entry.error.isReviewed)"
+                <div class="card-right">
+                  <span class="error-time-subtle">{{ formatTimeFriendly(entry.error.time) }}</span>
+                </div>
+              </div>
+
+              <div class="card-body">
+                <div class="error-message-text" :title="entry.error.message">
+                  {{ truncate(entry.error.message, 180) }}
+                </div>
+              </div>
+
+              <div class="card-footer-meta">
+                <div class="meta-tags">
+                  <span class="meta-tag" v-if="entry.error.hostName"><i class="pi pi-server"></i> {{ entry.error.hostName }}</span>
+                  <span class="meta-tag" v-if="entry.error.user"><i class="pi pi-user"></i> {{ entry.error.user }}</span>
+                </div>
+                <div class="card-actions">
+                  <button 
+                    class="card-reviewed-toggle"
+                    :class="{ 'is-reviewed': entry.error.isReviewed }"
+                    @click.stop="store.toggleReview(entry.id, !entry.error.isReviewed)"
+                    title="Toggle Reviewed Status"
+                  >
+                    <i :class="entry.error.isReviewed ? 'pi pi-check-circle' : 'pi pi-circle'"></i>
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Table View (Standard full view when no details open) -->
+          <div v-else class="table-responsive" ref="tableContainerRef">
+            <table class="errors-table">
+              <thead>
+                <tr>
+                  <th width="40">
+                    <input 
+                      type="checkbox" 
+                      :checked="isAllSelected" 
+                      @change="toggleSelectAll"
+                    />
+                  </th>
+                  <th width="90">Severity</th>
+                  <th width="80">Code</th>
+                  <th>Error Details</th>
+                  <th width="150">Host</th>
+                  <th width="120">User</th>
+                  <th width="180">Time</th>
+                  <th width="130">Reviewed</th>
+                  <th width="100">Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr 
+                  v-for="entry in store.errors" 
+                  :key="entry.id" 
+                  :class="{ 
+                    'reviewed-row': entry.error.isReviewed, 
+                    'selected-row': store.selectedIds.includes(entry.id),
+                    'active-row': entry.id === selectedErrorId
+                  }"
                 >
-                  <i :class="entry.error.isReviewed ? 'pi pi-check-circle' : 'pi pi-circle'"></i>
-                  <span>{{ entry.error.isReviewed ? 'Reviewed' : 'Open' }}</span>
+                  <td>
+                    <input 
+                      type="checkbox" 
+                      :value="entry.id" 
+                      v-model="store.selectedIds"
+                    />
+                  </td>
+                  <td>
+                    <span class="severity-badge" :class="getSeverityClass(entry.error.statusCode)">
+                      {{ getSeverityText(entry.error.statusCode) }}
+                    </span>
+                  </td>
+                  <td class="font-mono text-center font-bold">
+                    {{ entry.error.statusCode || 'N/A' }}
+                  </td>
+                  <td class="error-summary-cell" @click="viewDetails(entry.id)">
+                    <div class="error-type">{{ getShortTypeName(entry.error.type) }}</div>
+                    <div class="error-message" :title="entry.error.message">
+                      {{ truncate(entry.error.message, 120) }}
+                    </div>
+                  </td>
+                  <td class="text-light font-mono">{{ entry.error.hostName || 'N/A' }}</td>
+                  <td class="text-light">{{ entry.error.user || 'N/A' }}</td>
+                  <td class="text-light font-mono">{{ formatTime(entry.error.time) }}</td>
+                  <td>
+                    <button 
+                      class="reviewed-toggle-btn"
+                      :class="{ 'is-reviewed': entry.error.isReviewed }"
+                      @click="store.toggleReview(entry.id, !entry.error.isReviewed)"
+                    >
+                      <i :class="entry.error.isReviewed ? 'pi pi-check-circle' : 'pi pi-circle'"></i>
+                      <span>{{ entry.error.isReviewed ? 'Reviewed' : 'Open' }}</span>
+                    </button>
+                  </td>
+                  <td>
+                    <div class="table-actions">
+                      <button class="icon-btn" title="View details" @click="viewDetails(entry.id)">
+                        <i class="pi pi-eye text-primary"></i>
+                      </button>
+                      <button class="icon-btn" title="Delete Log" @click="deleteItem(entry.id)">
+                        <i class="pi pi-trash text-danger"></i>
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Traditional Sidebar Pager (Sidebar view) -->
+          <div v-if="selectedErrorId && store.errors.length > 0" class="sidebar-pager">
+            <div class="pager-left">
+              {{ startRange }} - {{ endRange }} of {{ store.totalCount }}
+            </div>
+            <div class="pager-right">
+              <button class="icon-btn" :disabled="isFirstPage" @click="prevPage" title="Previous Page">
+                <i class="pi pi-chevron-left"></i>
+              </button>
+              <span class="page-indicator font-mono">
+                {{ currentPage }} / {{ totalPages }}
+              </span>
+              <button class="icon-btn" :disabled="isLastPage" @click="nextPage" title="Next Page">
+                <i class="pi pi-chevron-right"></i>
+              </button>
+            </div>
+          </div>
+
+          <!-- Traditional Table Pagination (Full view) -->
+          <div v-else-if="store.errors.length > 0" class="table-footer">
+            <div class="footer-left">
+              Showing {{ startRange }} - {{ endRange }} of {{ store.totalCount }} errors
+            </div>
+            <div class="footer-right">
+              <!-- Page size selector -->
+              <div class="page-size">
+                Rows per page:
+                <select :value="store.pageSize" @change="changePageSize">
+                  <option :value="10">10</option>
+                  <option :value="25">25</option>
+                  <option :value="50">50</option>
+                  <option :value="100">100</option>
+                </select>
+              </div>
+
+              <!-- Page navigation buttons -->
+              <div class="pagination-nav">
+                <button class="icon-btn" :disabled="isFirstPage" @click="prevPage">
+                  <i class="pi pi-chevron-left"></i>
                 </button>
-              </td>
-              <td>
-                <div class="table-actions">
-                  <button class="icon-btn" title="View details" @click="viewDetails(entry.id)">
-                    <i class="pi pi-eye text-primary"></i>
-                  </button>
-                  <button class="icon-btn" title="Delete Log" @click="deleteItem(entry.id)">
-                    <i class="pi pi-trash text-danger"></i>
-                  </button>
-                </div>
-              </td>
-            </tr>
-          </tbody>
-        </table>
+                <span class="page-indicator">
+                  Page {{ currentPage }} of {{ totalPages }}
+                </span>
+                <button class="icon-btn" :disabled="isLastPage" @click="nextPage">
+                  <i class="pi pi-chevron-right"></i>
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       </div>
 
-      <!-- Pagination Footer -->
-      <div v-if="store.errors.length > 0" class="table-footer">
-        <div class="footer-left">
-          Showing {{ startRange }} - {{ endRange }} of {{ store.totalCount }} errors
-        </div>
-        <div class="footer-right">
-          <!-- Page size selector -->
-          <div class="page-size">
-            Rows per page:
-            <select :value="store.pageSize" @change="changePageSize">
-              <option :value="10">10</option>
-              <option :value="25">25</option>
-              <option :value="50">50</option>
-              <option :value="100">100</option>
-            </select>
-          </div>
-
-          <!-- Page navigation buttons -->
-          <div class="pagination-nav">
-            <button class="icon-btn" :disabled="isFirstPage" @click="prevPage">
-              <i class="pi pi-chevron-left"></i>
-            </button>
-            <span class="page-indicator">
-              Page {{ currentPage }} of {{ totalPages }}
-            </span>
-            <button class="icon-btn" :disabled="isLastPage" @click="nextPage">
-              <i class="pi pi-chevron-right"></i>
-            </button>
-          </div>
-        </div>
+      <!-- Right side: Details pane -->
+      <div class="details-pane" :class="{ 'active': selectedErrorId }" v-if="selectedErrorId">
+        <ErrorDetailPanel 
+          :id="selectedErrorId" 
+          @close="closeDetails" 
+          @deleted="onDetailDeleted" 
+        />
       </div>
     </div>
   </div>
@@ -240,11 +336,22 @@ import { useRouter } from 'vue-router';
 import { useErrorStore } from '../stores/errorStore';
 import { useToast } from 'primevue/usetoast';
 import dayjs from 'dayjs';
+import ErrorDetailPanel from '../components/ErrorDetailPanel.vue';
+
+const props = defineProps({
+  id: {
+    type: String,
+    required: false,
+    default: null
+  }
+});
 
 const store = useErrorStore();
 const router = useRouter();
 const toast = useToast();
 
+const cardsListRef = ref(null);
+const tableContainerRef = ref(null);
 const showFilters = ref(false);
 const searchTerm = ref('');
 const filterHost = ref('');
@@ -255,6 +362,35 @@ const filterIsReviewed = ref('');
 const filterApplication = ref('');
 const filterFrom = ref('');
 const filterTo = ref('');
+
+const selectedErrorId = computed(() => props.id);
+
+const closeDetails = () => {
+  router.push('/');
+};
+
+const onDetailDeleted = async (deletedId) => {
+  router.push('/');
+  await store.fetchErrors();
+  await store.fetchCounts();
+};
+
+const scrollToTop = () => {
+  if (cardsListRef.value) {
+    cardsListRef.value.scrollTop = 0;
+  }
+  if (tableContainerRef.value) {
+    tableContainerRef.value.scrollTop = 0;
+  }
+};
+
+const toggleItemSelection = (id) => {
+  if (store.selectedIds.includes(id)) {
+    store.selectedIds = store.selectedIds.filter(x => x !== id);
+  } else {
+    store.selectedIds.push(id);
+  }
+};
 
 // Computed Paging helpers
 const totalPages = computed(() => Math.ceil(store.totalCount / store.pageSize) || 1);
@@ -319,6 +455,7 @@ const prevPage = () => {
   if (!isFirstPage.value) {
     store.pageIndex = Math.max(0, store.pageIndex - store.pageSize);
     store.fetchErrors();
+    scrollToTop();
   }
 };
 
@@ -326,6 +463,7 @@ const nextPage = () => {
   if (!isLastPage.value) {
     store.pageIndex = store.pageIndex + store.pageSize;
     store.fetchErrors();
+    scrollToTop();
   }
 };
 
@@ -336,7 +474,11 @@ const truncate = (str, len) => {
 };
 
 const formatTime = (time) => {
-  return dayjs(time).format('YYYY-MM-DD HH:mm:ss');
+  return dayjs(time).format('YYYY-MM-DD h:mm:ss A');
+};
+
+const formatTimeFriendly = (time) => {
+  return dayjs(time).format('MMM D, h:mm:ss A');
 };
 
 const getShortTypeName = (type) => {
@@ -368,9 +510,9 @@ const viewDetails = (id) => {
 
 const deleteItem = async (id) => {
   if (confirm('Are you sure you want to delete this log?')) {
-    await store.deleteSelected();
-    await store.toggleReview(id, false); // Clear review status or trigger refresh
-    // Note: store.deleteSelected expects selections, let's call API directly or push to selection first
+    if (selectedErrorId.value === id) {
+      router.push('/');
+    }
     store.selectedIds = [id];
     await store.deleteSelected();
     toast.add({ severity: 'success', summary: 'Success', detail: 'Error log deleted', life: 3000 });
@@ -384,6 +526,9 @@ const bulkMarkReviewed = async (reviewed) => {
 
 const bulkDelete = async () => {
   if (confirm(`Are you sure you want to delete ${store.selectedIds.length} items?`)) {
+    if (store.selectedIds.includes(selectedErrorId.value)) {
+      router.push('/');
+    }
     await store.deleteSelected();
     toast.add({ severity: 'success', summary: 'Bulk Action', detail: 'Selected items deleted', life: 3000 });
   }
@@ -391,6 +536,7 @@ const bulkDelete = async () => {
 
 const confirmDeleteAll = async () => {
   if (confirm('WARNING: Are you sure you want to clear ALL errors in the log? This action cannot be undone.')) {
+    router.push('/');
     await store.deleteAll();
     toast.add({ severity: 'warn', summary: 'System Action', detail: 'All error logs deleted', life: 5000 });
   }
@@ -406,6 +552,43 @@ onMounted(() => {
 .errors-list-view {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  height: 100%;
+  overflow: hidden;
+}
+
+.split-container {
+  display: flex;
+  gap: 1.5rem;
+  flex: 1;
+  min-height: 0;
+  overflow: hidden;
+  height: 100%;
+}
+
+.list-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  min-width: 0;
+  height: 100%;
+  padding-right: 0.25rem;
+}
+
+.list-pane.has-detail {
+  flex: 0 0 40%;
+}
+
+.details-pane {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow-y: auto;
+  height: 100%;
+  border-left: 1px solid var(--border-color);
+  padding-left: 1.5rem;
 }
 
 .card {
@@ -639,12 +822,19 @@ onMounted(() => {
 /* Errors Table styling */
 .table-card {
   padding: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
   overflow: hidden;
 }
 
 .table-responsive {
   width: 100%;
+  flex: 1;
+  overflow-y: auto;
   overflow-x: auto;
+  min-height: 0;
 }
 
 .errors-table {
@@ -668,6 +858,13 @@ onMounted(() => {
   text-transform: uppercase;
   font-size: 0.75rem;
   letter-spacing: 0.05em;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+.errors-table tbody tr {
+  transition: background-color 0.15s;
 }
 
 .errors-table tbody tr:hover {
@@ -680,6 +877,12 @@ onMounted(() => {
 
 .selected-row {
   background-color: var(--primary-light) !important;
+}
+
+/* Active Highlight */
+.errors-table tbody tr.active-row {
+  background-color: var(--primary-light) !important;
+  border-left: 3px solid var(--primary-color);
 }
 
 .severity-badge {
@@ -871,5 +1074,253 @@ html.dark-mode .reviewed-toggle-btn.is-reviewed {
 @keyframes fadeIn {
   from { opacity: 0; }
   to { opacity: 1; }
+}
+
+/* Error Card List Layout (Sidebar view) */
+.error-cards-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  padding: 0.5rem;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+}
+
+.error-card {
+  background-color: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  padding: 0.4rem 0.6rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: flex;
+  flex-direction: column;
+  gap: 0.15rem;
+}
+
+.error-card:hover {
+  border-color: var(--primary-color);
+  background-color: var(--bg-color);
+}
+
+.error-card.active-card {
+  border-color: var(--primary-color);
+  background-color: var(--primary-light);
+  box-shadow: 0 0 0 1px var(--primary-color);
+}
+
+.error-card.reviewed-card {
+  opacity: 0.7;
+}
+
+.card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.card-left {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  min-width: 0;
+}
+
+.status-code-subtle {
+  font-family: SFMono-Regular, Consolas, Monaco, monospace;
+  font-weight: 700;
+  font-size: 0.725rem;
+  padding: 0.05rem 0.25rem;
+  border-radius: 4px;
+  white-space: nowrap;
+}
+
+.status-code-subtle.error {
+  color: var(--error-color);
+  background-color: #fee2e2;
+}
+html.dark-mode .status-code-subtle.error {
+  background-color: #7f1d1d;
+}
+
+.status-code-subtle.warning {
+  color: var(--warning-color);
+  background-color: #fef3c7;
+}
+html.dark-mode .status-code-subtle.warning {
+  background-color: #78350f;
+}
+
+.status-code-subtle.success {
+  color: var(--success-color);
+  background-color: #d1fae5;
+}
+html.dark-mode .status-code-subtle.success {
+  background-color: #064e3b;
+}
+
+.status-code-subtle.info {
+  color: #0284c7;
+  background-color: #e0f2fe;
+}
+html.dark-mode .status-code-subtle.info {
+  background-color: #0c4a6e;
+}
+
+.error-type-title {
+  font-weight: 700;
+  color: var(--text-color);
+  font-size: 0.8rem;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.error-time-subtle {
+  font-size: 0.7rem;
+  color: var(--text-light);
+  font-family: SFMono-Regular, Consolas, Monaco, monospace;
+  white-space: nowrap;
+}
+
+.card-body {
+  min-width: 0;
+}
+
+.error-message-text {
+  font-size: 0.725rem;
+  color: var(--text-light);
+  line-height: 1.25;
+  word-break: break-word;
+  display: -webkit-box;
+  -webkit-line-clamp: 1;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+}
+
+.error-card.active-card .error-message-text {
+  color: var(--text-color);
+}
+
+.card-footer-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 0.1rem;
+  border-top: none;
+  padding-top: 0;
+  font-size: 0.7rem;
+}
+
+.meta-tags {
+  display: flex;
+  gap: 0.4rem;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+.meta-tag {
+  color: var(--text-light);
+  font-family: SFMono-Regular, Consolas, Monaco, monospace;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100px;
+}
+
+.meta-tag i {
+  font-size: 0.7rem;
+}
+
+.card-actions {
+  display: flex;
+  align-items: center;
+}
+
+.card-reviewed-toggle {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0.2rem;
+  color: var(--text-light);
+  font-size: 0.85rem;
+  transition: color 0.15s;
+}
+
+.card-reviewed-toggle:hover {
+  color: var(--primary-color);
+}
+
+.card-reviewed-toggle.is-reviewed {
+  color: var(--success-color);
+}
+
+/* Sidebar Pager Styling */
+.sidebar-pager {
+  padding: 0.4rem 0.6rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.8rem;
+  color: var(--text-light);
+  background-color: var(--bg-color);
+  margin-top: auto; /* Push pager to the bottom of the list-pane */
+}
+
+.pager-right {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.infinite-scroll-loading i {
+  animation: spin-loader 1s linear infinite;
+}
+
+.cards-only-card {
+  padding: 0 !important;
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+@keyframes spin-loader {
+  from { transform: rotate(0deg); }
+  to { transform: rotate(360deg); }
+}
+
+/* Responsive Overrides */
+@media (max-width: 1024px) {
+  .split-container {
+    flex-direction: column;
+    height: auto;
+    overflow: visible;
+  }
+
+  .list-pane {
+    height: auto;
+    overflow: visible;
+  }
+
+  .list-pane.has-detail {
+    display: none;
+  }
+
+  .error-cards-list,
+  .table-responsive {
+    overflow: visible;
+    height: auto;
+    flex: none;
+  }
+
+  .details-pane {
+    flex: none;
+    width: 100%;
+    border-left: none;
+    padding-left: 0;
+  }
 }
 </style>
