@@ -31,95 +31,98 @@
       </div>
     </div>
 
-    <!-- Quick Action Bar -->
-    <div class="card action-bar mb-4" v-if="error">
-      <div class="action-left">
-        <span class="status-code-badge" :class="getSeverityClass(error.statusCode)">
-          {{ error.statusCode || 'N/A' }}
-        </span>
-        <div class="error-meta">
-          <h2 class="error-title">{{ getShortTypeName(error.type) }}</h2>
-          <p class="error-subtitle">{{ error.message }}</p>
-        </div>
-      </div>
-      <div class="action-right">
-        <!-- Mark Reviewed Toggle -->
-        <button 
-          class="btn" 
-          :class="error.isReviewed ? 'btn-success' : 'btn-secondary'"
-          @click="toggleReviewed"
-        >
-          <i :class="error.isReviewed ? 'pi pi-check-circle mr-1' : 'pi pi-circle mr-1'"></i>
-          {{ error.isReviewed ? 'Reviewed' : 'Mark Reviewed' }}
-        </button>
-
-        <!-- Copy GUID -->
-        <button class="btn btn-secondary" @click="copyToClipboard(props.id, 'Error ID copied!')" title="Copy Error GUID">
-          <i class="pi pi-copy mr-1"></i> Copy GUID
-        </button>
-
-        <!-- Share -->
-        <button class="btn btn-secondary" @click="shareLink" title="Copy Share Link">
-          <i class="pi pi-share-alt mr-1"></i> Share
-        </button>
-
-        <!-- Delete -->
-        <button class="btn btn-danger" @click="deleteError">
-          <i class="pi pi-trash mr-1"></i> Delete
-        </button>
-      </div>
-    </div>
-
-    <!-- Metadata Summary Card -->
-    <div class="card metadata-summary-card mb-4" v-if="error">
-      <div class="metadata-grid">
-        <div class="metadata-main">
-          <div class="metadata-row">
-            <div class="metadata-item">
-              <span class="meta-label">When</span>
-              <span class="meta-value font-mono">{{ formatTime(error.time) }}</span>
-            </div>
-            <div class="metadata-item" v-if="error.client">
-              <span class="meta-label">Client IP</span>
-              <span class="meta-value font-mono select-all">{{ error.client }}</span>
-            </div>
-            <div class="metadata-item" v-if="error.user">
-              <span class="meta-label">User</span>
-              <span class="meta-value select-all">{{ error.user }}</span>
-            </div>
-            <div class="metadata-item" v-if="error.hostName">
-              <span class="meta-label">Host</span>
-              <span class="meta-value font-mono">{{ error.hostName }}</span>
-            </div>
-          </div>
-          <div class="metadata-row">
-            <div class="metadata-item text-break" v-if="error.url">
-              <span class="meta-label">URL</span>
-              <span class="meta-value font-mono select-all">
-                <span class="method-badge" :class="getSeverityClass(error.statusCode)">{{ error.method }}</span>
-                {{ error.url }}
-              </span>
-            </div>
-          </div>
-          <div class="metadata-row">
-            <div class="metadata-item" v-if="error.applicationName">
-              <span class="meta-label">Application</span>
-              <span class="meta-value">{{ error.applicationName }}</span>
-            </div>
-            <div class="metadata-item" v-if="error.source">
-              <span class="meta-label">Source</span>
-              <span class="meta-value font-mono text-break">{{ error.source }}</span>
-            </div>
+    <!-- Unified Error Details Header Card -->
+    <div class="card unified-header-card mb-4" v-if="error" :class="getSeverityClass(error.statusCode)">
+      <!-- Action Bar Row -->
+      <div class="action-bar-section">
+        <div class="action-top">
+          <span class="status-code-badge" :class="getSeverityClass(error.statusCode)">
+            {{ error.statusCode || 'N/A' }}
+          </span>
+          <div class="error-meta">
+            <h2 class="error-title">{{ getShortTypeName(error.type) }}</h2>
+            <p class="error-subtitle">{{ error.message }}</p>
           </div>
         </div>
-        <div class="metadata-sidebar" v-if="error.os || error.browser">
-          <div class="client-icon-card" v-if="error.os">
-            <i class="pi" :class="[getOsIcon(error.os), 'os-icon-' + error.os.toLowerCase()]"></i>
-            <span class="client-label">{{ error.os }}</span>
+        <div class="action-buttons mt-3">
+          <!-- Mark Reviewed Toggle -->
+          <button 
+            class="btn" 
+            :class="error.isReviewed ? 'btn-success' : 'btn-secondary'"
+            @click="toggleReviewed"
+          >
+            <i :class="error.isReviewed ? 'pi pi-check-circle mr-1' : 'pi pi-circle mr-1'"></i>
+            {{ error.isReviewed ? 'Reviewed' : 'Mark Reviewed' }}
+          </button>
+
+          <!-- Copy GUID -->
+          <button class="btn btn-secondary" @click="copyToClipboard(props.id, 'Error ID copied!')" title="Copy Error GUID">
+            <i class="pi pi-copy mr-1"></i> Copy GUID
+          </button>
+
+          <!-- Share -->
+          <button class="btn btn-secondary" @click="shareLink" title="Copy Share Link">
+            <i class="pi pi-share-alt mr-1"></i> Share
+          </button>
+
+          <!-- Delete -->
+          <button class="btn btn-danger" @click="deleteError">
+            <i class="pi pi-trash mr-1"></i> Delete
+          </button>
+        </div>
+      </div>
+
+      <!-- Metadata Section -->
+      <div class="metadata-section">
+        <div class="metadata-grid">
+          <div class="metadata-main">
+            <div class="metadata-row">
+              <div class="metadata-item">
+                <span class="meta-label">When</span>
+                <span class="meta-value font-mono">{{ formatTime(error.time) }}</span>
+              </div>
+              <div class="metadata-item" v-if="error.client">
+                <span class="meta-label">Client IP</span>
+                <span class="meta-value font-mono select-all">{{ error.client }}</span>
+              </div>
+              <div class="metadata-item" v-if="error.user">
+                <span class="meta-label">User</span>
+                <span class="meta-value select-all">{{ error.user }}</span>
+              </div>
+              <div class="metadata-item" v-if="error.hostName">
+                <span class="meta-label">Host</span>
+                <span class="meta-value font-mono">{{ error.hostName }}</span>
+              </div>
+            </div>
+            <div class="metadata-row">
+              <div class="metadata-item text-break" v-if="error.url">
+                <span class="meta-label">URL</span>
+                <span class="meta-value font-mono select-all">
+                  <span class="method-badge" :class="getSeverityClass(error.statusCode)">{{ error.method }}</span>
+                  {{ error.url }}
+                </span>
+              </div>
+            </div>
+            <div class="metadata-row">
+              <div class="metadata-item" v-if="error.applicationName">
+                <span class="meta-label">Application</span>
+                <span class="meta-value">{{ error.applicationName }}</span>
+              </div>
+              <div class="metadata-item" v-if="error.source">
+                <span class="meta-label">Source</span>
+                <span class="meta-value font-mono text-break">{{ error.source }}</span>
+              </div>
+            </div>
           </div>
-          <div class="client-icon-card" v-if="error.browser">
-            <i class="pi" :class="[getBrowserIcon(error.browser), 'browser-icon-' + error.browser.toLowerCase()]"></i>
-            <span class="client-label">{{ error.browser }}</span>
+          <div class="metadata-sidebar" v-if="error.os || error.browser">
+            <div class="client-icon-card" v-if="error.os">
+              <i class="pi" :class="[getOsIcon(error.os), 'os-icon-' + error.os.toLowerCase()]"></i>
+              <span class="client-label">{{ error.os }}</span>
+            </div>
+            <div class="client-icon-card" v-if="error.browser">
+              <i class="pi" :class="[getBrowserIcon(error.browser), 'browser-icon-' + error.browser.toLowerCase()]"></i>
+              <span class="client-label">{{ error.browser }}</span>
+            </div>
           </div>
         </div>
       </div>
@@ -1070,17 +1073,40 @@ html.dark-mode .status-code-badge.error {
   font-weight: 700;
 }
 
-/* Metadata Summary Box styling */
-.metadata-summary-card {
-  background-color: #f0f9ff;
-  border: 1px solid #bae6fd;
-  padding: 1.25rem;
-  border-radius: 12px;
+/* Unified Header Card styling */
+.unified-header-card {
+  padding: 0 !important;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-html.dark-mode .metadata-summary-card {
+.unified-header-card.error {
+  border-left: 4px solid var(--error-color);
+}
+.unified-header-card.warning {
+  border-left: 4px solid var(--warning-color);
+}
+.unified-header-card.success {
+  border-left: 4px solid var(--success-color);
+}
+.unified-header-card.info {
+  border-left: 4px solid var(--primary-color);
+}
+
+.action-bar-section {
+  padding: 1.25rem;
+}
+
+.metadata-section {
+  background-color: #f0f9ff;
+  border-top: 1px solid #bae6fd;
+  padding: 1.25rem;
+}
+
+html.dark-mode .metadata-section {
   background-color: #0c4a6e;
-  border-color: #0284c7;
+  border-top-color: #0284c7;
 }
 
 .metadata-grid {
