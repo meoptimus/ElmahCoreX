@@ -452,7 +452,7 @@ body {
 .content-body {
   flex: 1;
   overflow: hidden;
-  padding: 0.75rem;
+  padding: 0.5rem 0.75rem 0.1rem 0.75rem;
   display: flex;
   flex-direction: column;
 }

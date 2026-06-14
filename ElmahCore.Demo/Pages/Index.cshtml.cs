@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc.RazorPages;
+using Microsoft.AspNetCore.Mvc.RazorPages;
 
 namespace ElmahCore.Demo.Pages;
 
@@ -20,11 +20,13 @@ public class IndexModel : PageModel
         _logger.LogWarning("Test");
         _logger.LogCritical(new InvalidOperationException("Test"), "Test");
 
-        ElmahExtensions.RaiseError(new Exception("test2"));
-
-        var r = 0;
-        // ReSharper disable once UnusedVariable
-        // ReSharper disable once IntDivisionByZero
-        var d = 100 / r;
+        try
+        {
+            throw new ArgumentNullException("connectionString", "The database connection string is empty or invalid. Please check your appsettings.json configuration file and ensure that the database service is running and accessible from the hosting environment.");
+        }
+        catch (Exception ex)
+        {
+            throw new InvalidOperationException("Failed to initialize the database repository layer because the configuration provider returned invalid parameters for the current development environment. See inner exception for details.", ex);
+        }
     }
 }
