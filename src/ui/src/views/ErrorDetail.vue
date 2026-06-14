@@ -544,9 +544,39 @@ const formatBody = (body) => {
 
 const formatHtmlMessage = (html) => {
   if (!html) return '';
-  return html.replace(/# caller: @([^\r\n]+)/g, (match, path) => {
+
+  // First handle the caller line replacement
+  let processed = html.replace(/# caller: @([^\r\n]+)/g, (match, path) => {
     return `<span class="st-caller-line"># caller: <span class="st-caller-path">@${path}</span></span>`;
   });
+
+  // Split by line break to format exception headers and inner exceptions
+  const lines = processed.split('\n').map(l => l.replace(/\r$/, ''));
+  const formattedLines = lines.map(line => {
+    // If it contains st-frame span, it is already marked up by backend for frames
+    if (line.includes('st-frame')) {
+      return line;
+    }
+
+    // Check for inner or outer exception: "(arrow)? ExceptionType: message"
+    const excMatch = line.match(/^(\s*--->\s*|\s*---&gt;\s*)?([A-Za-z0-9_.]*Exception):\s*(.*)/);
+    if (excMatch) {
+      const arrow = excMatch[1] || '';
+      const excType = excMatch[2];
+      const msg = excMatch[3];
+      const highlightedArrow = arrow ? `<span class="st-arrow text-muted">${arrow}</span>` : '';
+      return `<span class="st-exception-line">${highlightedArrow}<span class="st-exception-type">${excType}</span>: <span class="st-exception-msg font-bold">${msg}</span></span>`;
+    }
+
+    // Additional diagnostic lines (e.g., "File name: 'Newtonsoft.Json.dll'")
+    if (line.trim().startsWith('File name:') || line.trim().startsWith('FileNotFoundException:') || line.trim().includes('Assembly:')) {
+      return `<span class="st-diagnostic-line text-muted">${line}</span>`;
+    }
+
+    return line;
+  });
+
+  return formattedLines.join('\n');
 };
 
 const formatRawStackTrace = (text) => {
@@ -557,7 +587,7 @@ const formatRawStackTrace = (text) => {
     .replace(/</g, '&lt;')
     .replace(/>/g, '&gt;');
 
-  const lines = escaped.split('\n');
+  const lines = escaped.split('\n').map(l => l.replace(/\r$/, ''));
   const formattedLines = lines.map(line => {
     // 1. Check for stack trace frame: starts with spaces followed by "at " or "   at "
     const atMatch = line.match(/^(\s*at\s+)([A-Za-z0-9_.\+<>`\[\]]+)\(([^)]*)\)(?:\s+in\s+(.*?):line\s+(\d+))?/);
@@ -600,21 +630,19 @@ const formatRawStackTrace = (text) => {
       return `<span class="st-frame">${lineHtml}</span>`;
     }
 
-    // 2. Check for inner exception indicator: "---> ExceptionType: message"
-    const innerMatch = line.match(/^(\s*--->\s+)?([A-Za-z0-9_.]*Exception):\s*(.*)/);
-    if (innerMatch) {
-      const arrow = innerMatch[1] || '';
-      const excType = innerMatch[2];
-      const msg = innerMatch[3];
-      return `<span class="st-exception-line">${arrow}<span class="st-exception-type">${excType}</span>: <span class="st-exception-msg">${msg}</span></span>`;
+    // 2. Check for inner or outer exception
+    const excMatch = line.match(/^(\s*--->\s*|\s*---&gt;\s*)?([A-Za-z0-9_.]*Exception):\s*(.*)/);
+    if (excMatch) {
+      const arrow = excMatch[1] || '';
+      const excType = excMatch[2];
+      const msg = excMatch[3];
+      const highlightedArrow = arrow ? `<span class="st-arrow text-muted">${arrow}</span>` : '';
+      return `<span class="st-exception-line">${highlightedArrow}<span class="st-exception-type">${excType}</span>: <span class="st-exception-msg font-bold">${msg}</span></span>`;
     }
 
-    // 3. Regular exception start line (e.g. "System.AggregateException: One or more...")
-    const startMatch = line.match(/^([A-Za-z0-9_.]*Exception):\s*(.*)/);
-    if (startMatch) {
-      const excType = startMatch[1];
-      const msg = startMatch[2];
-      return `<span class="st-exception-line"><span class="st-exception-type">${excType}</span>: <span class="st-exception-msg font-bold">${msg}</span></span>`;
+    // 3. Additional diagnostic lines
+    if (line.trim().startsWith('File name:') || line.trim().startsWith('FileNotFoundException:') || line.trim().includes('Assembly:')) {
+      return `<span class="st-diagnostic-line text-muted">${line}</span>`;
     }
 
     return line;
@@ -915,12 +943,17 @@ html.dark-mode .status-code-badge.error {
 /* Stack Trace */
 .stacktrace-container {
   background-color: #f8fafc;
-  color: #334155;
+  color: #0f172a; /* high contrast dark text */
   border: 1px solid var(--border-color);
   padding: 1.5rem;
   border-radius: 8px;
   overflow: auto;
   max-height: 500px;
+}
+
+html.dark-mode .stacktrace-container {
+  background-color: #0f172a; /* very dark slate */
+  color: #f1f5f9; /* high contrast off-white */
 }
 
 .stacktrace-raw {
@@ -948,35 +981,35 @@ html.dark-mode .status-code-badge.error {
 }
 
 :deep(.st-type) {
-  color: #4f46e5; /* indigo for types/namespaces */
+  color: #2563eb; /* royal blue */
   font-weight: 600;
 }
 
 :deep(.st-method) {
-  color: #0891b2; /* cyan/teal for method name */
-  font-weight: 600;
+  color: #0d9488; /* vibrant teal */
+  font-weight: 700;
 }
 
 :deep(.params) {
-  color: #64748b; /* slate gray for parameter parens */
+  color: #475569; /* dark gray parens */
 }
 
 :deep(.st-param-type) {
-  color: #2563eb; /* blue for parameter types */
+  color: #1d4ed8; /* blue for param types */
 }
 
 :deep(.st-param-name) {
-  color: #b45309; /* amber/brown for parameter names */
+  color: #475569; /* gray for parameter names */
   font-style: italic;
 }
 
 :deep(.st-file) {
-  color: #b91c1c; /* dark red for source files */
+  color: #c026d3; /* magenta/purple for source files */
   margin-left: 0.5rem;
 }
 
 :deep(.st-line) {
-  color: #c2410c; /* dark orange for line numbers */
+  color: #c026d3; /* magenta/purple for line numbers */
   font-weight: bold;
 }
 
@@ -998,20 +1031,48 @@ html.dark-mode .status-code-badge.error {
 }
 
 :deep(.st-exception-type) {
-  color: #e11d48; /* rose/red for exception types */
+  color: #be185d; /* rose for exception types */
   font-weight: bold;
 }
 
 :deep(.st-exception-msg) {
-  color: #1e293b; /* dark slate for light mode */
+  color: #0f172a; /* dark slate for exception messages */
+}
+
+html.dark-mode :deep(.st-type) {
+  color: #60a5fa; /* bright sky blue */
+}
+
+html.dark-mode :deep(.st-method) {
+  color: #2dd4bf; /* bright teal */
+}
+
+html.dark-mode :deep(.params) {
+  color: #94a3b8;
+}
+
+html.dark-mode :deep(.st-param-type) {
+  color: #93c5fd;
+}
+
+html.dark-mode :deep(.st-param-name) {
+  color: #cbd5e1;
+}
+
+html.dark-mode :deep(.st-file) {
+  color: #f472b6; /* pink/magenta for files */
+}
+
+html.dark-mode :deep(.st-line) {
+  color: #f472b6; /* pink/magenta for lines */
 }
 
 html.dark-mode :deep(.st-exception-type) {
-  color: #fb7185; /* lighter rose for dark mode */
+  color: #fda4af;
 }
 
 html.dark-mode :deep(.st-exception-msg) {
-  color: #cbd5e1; /* slate gray/light for dark mode */
+  color: #f1f5f9;
 }
 
 /* Source Context Code */
