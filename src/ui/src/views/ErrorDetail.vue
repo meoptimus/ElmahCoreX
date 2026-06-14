@@ -133,7 +133,7 @@
         <div v-if="activeTab === 'stacktrace'" class="tab-pane">
           <!-- Syntax Highlighted Stack Trace Frame -->
           <div class="stacktrace-container">
-            <div v-if="error.htmlMessage" class="stacktrace-html" v-html="error.htmlMessage"></div>
+            <div v-if="error.htmlMessage" class="stacktrace-html" v-html="formatHtmlMessage(error.htmlMessage)"></div>
             <pre v-else class="stacktrace-raw">{{ error.detail }}</pre>
           </div>
 
@@ -492,6 +492,13 @@ const formatBody = (body) => {
   }
 };
 
+const formatHtmlMessage = (html) => {
+  if (!html) return '';
+  return html.replace(/# caller: @([^\r\n]+)/g, (match, path) => {
+    return `<span class="st-caller-line"># caller: <span class="st-caller-path">@${path}</span></span>`;
+  });
+};
+
 // Listen for route ID changes (prev/next navigation)
 watch(() => props.id, (newId) => {
   fetchErrorDetails(newId);
@@ -782,8 +789,9 @@ html.dark-mode .status-code-badge.error {
 
 /* Stack Trace */
 .stacktrace-container {
-  background-color: #0f172a;
-  color: #f1f5f9;
+  background-color: #f8fafc;
+  color: #334155;
+  border: 1px solid var(--border-color);
   padding: 1.5rem;
   border-radius: 8px;
   overflow: auto;
@@ -805,7 +813,7 @@ html.dark-mode .status-code-badge.error {
 }
 
 :deep(.stacktrace-html a) {
-  color: #38bdf8;
+  color: #0284c7;
   text-decoration: underline;
 }
 
@@ -815,35 +823,53 @@ html.dark-mode .status-code-badge.error {
 }
 
 :deep(.st-type) {
-  color: #c084fc; /* soft violet-purple for types/namespaces */
+  color: #4f46e5; /* indigo for types/namespaces */
+  font-weight: 600;
 }
 
 :deep(.st-method) {
-  color: #38bdf8; /* vibrant sky blue for method name */
+  color: #0891b2; /* cyan/teal for method name */
   font-weight: 600;
 }
 
 :deep(.params) {
-  color: #94a3b8; /* slate gray for parameter parens */
+  color: #64748b; /* slate gray for parameter parens */
 }
 
 :deep(.st-param-type) {
-  color: #a78bfa; /* lavender for parameter types */
+  color: #2563eb; /* blue for parameter types */
 }
 
 :deep(.st-param-name) {
-  color: #f472b6; /* warm pink for parameter names */
+  color: #b45309; /* amber/brown for parameter names */
   font-style: italic;
 }
 
 :deep(.st-file) {
-  color: #34d399; /* emerald green for source files */
+  color: #b91c1c; /* dark red for source files */
   margin-left: 0.5rem;
 }
 
 :deep(.st-line) {
-  color: #fb923c; /* safety orange for line numbers */
+  color: #c2410c; /* dark orange for line numbers */
   font-weight: bold;
+}
+
+:deep(.st-caller-line) {
+  display: block;
+  background-color: var(--primary-light);
+  color: var(--primary-color);
+  padding: 0.5rem 0.75rem;
+  border-radius: 6px;
+  border: 1px solid var(--border-color);
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+}
+
+:deep(.st-caller-path) {
+  color: #b91c1c;
+  font-weight: 700;
+  text-decoration: underline;
 }
 
 /* Source Context Code */

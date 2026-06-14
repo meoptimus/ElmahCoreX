@@ -97,10 +97,10 @@
         </p>
 
         <div class="links-row">
-          <a href="https://github.com/elmahcoreex/elmahcoreex" target="_blank" class="project-link">
+          <a href="https://github.com/meoptimus/ElmahCoreX" target="_blank" class="project-link">
             <i class="pi pi-github mr-1"></i> GitHub Repository
           </a>
-          <a href="https://www.nuget.org/packages/ElmahCoreEx" target="_blank" class="project-link">
+          <a href="https://www.nuget.org/packages/ElmahCoreX" target="_blank" class="project-link">
             <i class="pi pi-box mr-1"></i> NuGet Package
           </a>
         </div>

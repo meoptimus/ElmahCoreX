@@ -351,6 +351,7 @@ body {
   font-size: 0.9rem;
   transition: all 0.2s;
   position: relative;
+  white-space: nowrap;
 }
 
 .nav-item:hover {
@@ -475,7 +476,7 @@ body {
   opacity: 0;
 }
 
-@media (max-width: 1200px) {
+@media (max-width: 1366px) {
   /* On medium screens, only show labels for primary route (Errors) and use icons for secondary items */
   .top-nav .nav-item:not(:first-child) .nav-text {
     display: none;
