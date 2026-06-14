@@ -12,56 +12,37 @@
         <!-- Top bar header -->
         <header class="main-header">
           <div class="header-left">
-            <div class="logo">
-              <i class="pi pi-shield logo-icon"></i>
-              <span class="logo-text">ElmahCoreX</span>
-            </div>
-
-            <!-- Top Navigation links -->
+            <div class="logo">ElmahCoreX</div>
+            <!-- Top Navigation links (text-only, no icons) -->
             <nav class="top-nav">
               <router-link to="/" class="nav-item" active-class="active" title="View Error Logs">
-                <i class="pi pi-list nav-icon"></i>
-                <span class="nav-text">Errors</span>
-                <span v-if="store.totalFiltered > 0" class="badge">
-                  {{ store.totalFiltered }}
-                </span>
+                Errors
               </router-link>
-
-              <a :href="`${cleanRoot}/rss`" target="_blank" class="nav-item" title="RSS Feeds (Opens in new tab)">
-                <i class="pi pi-rss nav-icon" style="color: #f97316;"></i>
-                <span class="nav-text">RSS Feeds</span>
+              <a :href="`${cleanRoot}/rss`" target="_blank" class="nav-item" title="RSS Feeds">
+                RSS
               </a>
-
-              <a :href="`${cleanRoot}/digestrss`" target="_blank" class="nav-item" title="RSS Digest (Opens in new tab)">
-                <i class="pi pi-envelope nav-icon" style="color: #ef4444;"></i>
-                <span class="nav-text">RSS Digest</span>
+              <a :href="`${cleanRoot}/digestrss`" target="_blank" class="nav-item" title="RSS Digest">
+                Digest
               </a>
-
-              <a :href="`${cleanRoot}/download`" target="_blank" class="nav-item" title="Download log as CSV">
-                <i class="pi pi-download nav-icon" style="color: #22c55e;"></i>
-                <span class="nav-text">Download Log</span>
+              <a :href="`${cleanRoot}/download`" target="_blank" class="nav-item" title="Download Log">
+                Download
               </a>
-
-              <router-link to="/stats" class="nav-item" active-class="active" title="View Dashboard Statistics">
-                <i class="pi pi-chart-bar nav-icon"></i>
-                <span class="nav-text">Statistics</span>
+              <router-link to="/stats" class="nav-item" active-class="active" title="Statistics">
+                Stats
               </router-link>
-
-              <router-link to="/settings" class="nav-item" active-class="active" title="Configure Dashboard Settings">
-                <i class="pi pi-cog nav-icon"></i>
-                <span class="nav-text">Settings</span>
+              <router-link to="/settings" class="nav-item" active-class="active" title="Settings">
+                Settings
               </router-link>
-
-              <a href="https://github.com/meoptimus/ElmahCoreX" target="_blank" class="nav-item" title="Help / Documentation">
-                <i class="pi pi-question-circle nav-icon" style="color: #3b82f6;"></i>
-                <span class="nav-text">Help</span>
+              <a href="https://github.com/meoptimus/ElmahCoreX" target="_blank" class="nav-item" title="Help">
+                Help
               </a>
-
-              <button class="nav-item btn-link-style" @click="showAboutModal = true" title="About ElmahCoreX">
-                <i class="pi pi-info-circle nav-icon" style="color: #6366f1;"></i>
-                <span class="nav-text">About</span>
+              <button class="nav-item btn-link-style" @click="showAboutModal = true" title="About">
+                About
               </button>
             </nav>
+          </div>
+          <div class="header-center">
+            <span class="total-errors-text">{{ store.totalFiltered }} {{ store.totalFiltered === 1 ? 'error' : 'errors' }}</span>
           </div>
           <div class="header-right">
             <!-- Environment Badge -->
@@ -71,12 +52,11 @@
 
             <!-- Auto Refresh dropdown -->
             <div class="refresh-control">
-              <i class="pi pi-sync mr-1"></i>
               <select :value="store.autoRefreshInterval" @change="changeAutoRefresh">
-                <option :value="0">Manual Refresh</option>
-                <option :value="10">Poll 10s</option>
-                <option :value="30">Poll 30s</option>
-                <option :value="60">Poll 60s</option>
+                <option :value="0">Manual</option>
+                <option :value="10">10s</option>
+                <option :value="30">30s</option>
+                <option :value="60">60s</option>
               </select>
             </div>
 
@@ -240,20 +220,19 @@ onUnmounted(() => {
 </script>
 
 <style>
-/* CSS Variables & Global Dark/Light Theme System */
 :root {
   --font-family: 'Inter', system-ui, sans-serif;
-  --bg-color: #f8fafc;
+  --font-mono: 'IBM Plex Mono', monospace;
+  --bg-color: #fafbfc;
   --panel-bg: #ffffff;
-  --border-color: #e2e8f0;
-  --text-color: #334155;
-  --text-light: #64748b;
-  --primary-color: #4f46e5;
-  --primary-hover: #4338ca;
-  --primary-light: #e0e7ff;
-  --success-color: #10b981;
-  --warning-color: #f59e0b;
-  --error-color: #ef4444;
+  --border-color: #e1e4e8;
+  --text-color: #1b1f23;
+  --text-light: #586069;
+  --primary-color: #005cc5;
+  --primary-hover: #0366d6;
+  --success-color: #28a745;
+  --warning-color: #e36209;
+  --error-color: #d73a49;
   --env-dev-bg: #dbeafe;
   --env-dev-text: #1e40af;
   --env-stg-bg: #fef3c7;
@@ -263,17 +242,16 @@ onUnmounted(() => {
 }
 
 html.dark-mode {
-  --bg-color: #0f172a;
-  --panel-bg: #1e293b;
-  --border-color: #334155;
-  --text-color: #f1f5f9;
-  --text-light: #94a3b8;
-  --primary-color: #6366f1;
-  --primary-hover: #4f46e5;
-  --primary-light: #312e81;
-  --success-color: #10b981;
+  --bg-color: #0f1117;
+  --panel-bg: #161b27;
+  --border-color: #252d3d;
+  --text-color: #e8eaf0;
+  --text-light: #6b7a99;
+  --primary-color: #4a90e2;
+  --primary-hover: #357abd;
+  --success-color: #2ed573;
   --warning-color: #f59e0b;
-  --error-color: #f87171;
+  --error-color: #ff4757;
   --env-dev-bg: #1e3a8a;
   --env-dev-text: #93c5fd;
   --env-stg-bg: #78350f;
@@ -344,65 +322,60 @@ body {
 .header-left {
   display: flex;
   align-items: center;
-  gap: 2.5rem;
+  gap: 1.5rem;
 }
 
 .logo {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
+  font-family: var(--font-mono);
   font-weight: 700;
-  font-size: 1.25rem;
-  color: var(--primary-color);
+  font-size: 1.15rem;
+  color: var(--text-color);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
 }
 
-.logo-icon {
-  font-size: 1.5rem;
+.header-center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.total-errors-text {
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  color: var(--text-light);
+  font-weight: 500;
 }
 
 .top-nav {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 1rem;
 }
 
 .nav-item {
   display: flex;
   align-items: center;
-  padding: 0.5rem 0.85rem;
-  gap: 0.5rem;
+  padding: 0.2rem 0;
   color: var(--text-light);
   text-decoration: none;
-  border-radius: 8px;
   font-weight: 600;
-  font-size: 0.9rem;
-  transition: all 0.2s;
-  position: relative;
+  font-size: 0.85rem;
+  transition: all 0.15s;
+  border-bottom: 2px solid transparent;
+  border-radius: 0 !important;
   white-space: nowrap;
 }
 
 .nav-item:hover {
-  background-color: var(--bg-color);
+  background: none !important;
   color: var(--text-color);
 }
 
 .nav-item.active {
-  background-color: var(--primary-light);
-  color: var(--primary-color);
-}
-
-.nav-icon {
-  font-size: 1rem;
-}
-
-.badge {
-  background-color: var(--error-color);
-  color: white;
-  padding: 0.15rem 0.4rem;
-  border-radius: 12px;
-  font-size: 0.7rem;
-  font-weight: 700;
-  margin-left: 0.25rem;
+  background: none !important;
+  color: var(--primary-color) !important;
+  border-bottom: 2px solid var(--primary-color);
 }
 
 .header-right {
@@ -412,25 +385,15 @@ body {
 }
 
 .env-badge {
-  padding: 0.25rem 0.6rem;
-  border-radius: 12px;
+  padding: 0.2rem 0.5rem;
+  border-radius: 0 !important;
+  border: 1px solid var(--border-color);
+  background: transparent !important;
+  color: var(--text-light) !important;
+  font-family: var(--font-mono);
   font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.env-badge.development {
-  background-color: var(--env-dev-bg);
-  color: var(--env-dev-text);
-}
-
-.env-badge.staging {
-  background-color: var(--env-stg-bg);
-  color: var(--env-stg-text);
-}
-
-.env-badge.production {
-  background-color: var(--env-prd-bg);
-  color: var(--env-prd-text);
+  font-weight: 600;
+  letter-spacing: 0.05em;
 }
 
 .refresh-control {
@@ -442,12 +405,14 @@ body {
 
 .refresh-control select {
   background: none;
-  border: 1px solid var(--border-color);
-  border-radius: 4px;
-  color: var(--text-color);
+  border: none;
+  color: var(--text-light);
+  font-family: var(--font-family);
+  font-weight: 600;
+  font-size: 0.85rem;
   padding: 0.2rem 0.4rem;
-  margin-left: 0.25rem;
   outline: none;
+  cursor: pointer;
 }
 
 .icon-btn {
@@ -456,7 +421,7 @@ body {
   color: var(--text-light);
   cursor: pointer;
   padding: 0.5rem;
-  border-radius: 50%;
+  border-radius: 0;
   font-size: 1.1rem;
   display: flex;
   align-items: center;
@@ -503,34 +468,6 @@ body {
   opacity: 0;
 }
 
-@media (max-width: 1366px) {
-  /* On medium screens, only show labels for primary route (Errors) and use icons for secondary items */
-  .top-nav .nav-item:not(:first-child) .nav-text {
-    display: none;
-  }
-  .top-nav .nav-item:not(:first-child) {
-    padding: 0.5rem;
-  }
-}
-
-@media (max-width: 768px) {
-  .logo-text, .version-tag {
-    display: none;
-  }
-  .header-left {
-    gap: 0.5rem;
-  }
-  .top-nav {
-    gap: 0.25rem;
-  }
-  .top-nav .nav-text {
-    display: none !important;
-  }
-  .nav-item {
-    padding: 0.5rem !important;
-  }
-}
-
 /* About Modal Styles */
 .about-modal-overlay {
   position: fixed;
@@ -538,8 +475,7 @@ body {
   left: 0;
   width: 100vw;
   height: 100vh;
-  background-color: rgba(15, 23, 42, 0.65);
-  backdrop-filter: blur(4px);
+  background-color: rgba(0, 0, 0, 0.5);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -549,11 +485,11 @@ body {
 .about-modal-card {
   background-color: var(--panel-bg);
   border: 1px solid var(--border-color);
-  border-radius: 16px;
+  border-radius: 0;
   width: 90%;
   max-width: 480px;
   padding: 2.5rem 2rem 2rem 2rem;
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+  box-shadow: none;
   position: relative;
   text-align: center;
   color: var(--text-color);
@@ -586,6 +522,7 @@ body {
   margin: 0.5rem 0 0.25rem 0;
   font-size: 1.75rem;
   font-weight: 800;
+  font-family: var(--font-mono);
 }
 
 .about-version {
@@ -594,8 +531,9 @@ body {
   color: var(--text-light);
   background-color: var(--bg-color);
   padding: 0.2rem 0.6rem;
-  border-radius: 9999px;
+  border-radius: 0;
   border: 1px solid var(--border-color);
+  font-family: var(--font-mono);
 }
 
 .about-body {
@@ -611,7 +549,7 @@ body {
 
 .about-info-grid {
   background-color: var(--bg-color);
-  border-radius: 12px;
+  border-radius: 0;
   border: 1px solid var(--border-color);
   padding: 1rem;
   text-align: left;
@@ -637,6 +575,7 @@ body {
 .info-row .val {
   font-weight: 600;
   color: var(--text-color);
+  font-family: var(--font-mono);
 }
 
 .info-row .val a {
@@ -659,7 +598,7 @@ body {
   color: white;
   border: none;
   padding: 0.6rem 2rem;
-  border-radius: 8px;
+  border-radius: 0;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s;
@@ -697,25 +636,18 @@ body {
   gap: 0.75rem;
   min-width: 300px;
   max-width: 400px;
-  background-color: rgba(255, 255, 255, 0.95);
-  backdrop-filter: blur(8px);
+  background-color: var(--panel-bg);
   border: 1px solid var(--border-color);
   border-left: 4px solid var(--primary-color);
-  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
-  border-radius: 8px;
+  box-shadow: none;
+  border-radius: 0;
   padding: 0.75rem 1rem;
   cursor: pointer;
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
 }
 
-html.dark-mode .toast-item {
-  background-color: rgba(30, 41, 59, 0.95);
-  border-color: rgba(255, 255, 255, 0.1);
-}
-
 .toast-item:hover {
   transform: translateY(-2px);
-  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
 }
 
 /* Severity borders */

@@ -31,339 +31,349 @@
       </div>
     </div>
 
-    <!-- Unified Error Details Header Card -->
-    <div class="card unified-header-card mb-4" v-if="error" :class="getSeverityClass(error.statusCode)">
-      <!-- Action Bar Row -->
-      <div class="action-bar-section">
-        <div class="action-top">
-          <span class="status-code-badge" :class="getSeverityClass(error.statusCode)">
-            {{ error.statusCode || 'N/A' }}
-          </span>
-          <div class="error-meta">
-            <h2 class="error-title">{{ getShortTypeName(error.type) }}</h2>
-            <p class="error-subtitle">{{ error.message }}</p>
-          </div>
-        </div>
-        <div class="action-buttons mt-3">
-          <!-- Mark Reviewed Toggle -->
-          <button 
-            class="btn" 
-            :class="error.isReviewed ? 'btn-success' : 'btn-secondary'"
-            @click="toggleReviewed"
-          >
-            <i :class="error.isReviewed ? 'pi pi-check-circle mr-1' : 'pi pi-circle mr-1'"></i>
-            {{ error.isReviewed ? 'Reviewed' : 'Mark Reviewed' }}
-          </button>
-
-          <!-- Copy GUID -->
-          <button class="btn btn-secondary" @click="copyToClipboard(props.id, 'Error ID copied!')" title="Copy Error GUID">
-            <i class="pi pi-copy mr-1"></i> Copy GUID
-          </button>
-
-          <!-- Share -->
-          <button class="btn btn-secondary" @click="shareLink" title="Copy Share Link">
-            <i class="pi pi-share-alt mr-1"></i> Share
-          </button>
-
-          <!-- Delete -->
-          <button class="btn btn-danger" @click="deleteError">
-            <i class="pi pi-trash mr-1"></i> Delete
-          </button>
-        </div>
-      </div>
-
-      <!-- Metadata Section -->
-      <div class="metadata-section">
-        <div class="metadata-grid">
-          <div class="metadata-main">
-            <div class="metadata-grid-cols">
-              <div class="metadata-item">
-                <span class="meta-label">When</span>
-                <span class="meta-value font-mono">{{ formatTime(error.time) }}</span>
-              </div>
-              <div class="metadata-item" v-if="error.client">
-                <span class="meta-label">Client IP</span>
-                <span class="meta-value font-mono select-all">{{ error.client }}</span>
-              </div>
-              <div class="metadata-item" v-if="error.user">
-                <span class="meta-label">User</span>
-                <span class="meta-value select-all">{{ error.user }}</span>
-              </div>
-              <div class="metadata-item" v-if="error.hostName">
-                <span class="meta-label">Host</span>
-                <span class="meta-value font-mono">{{ error.hostName }}</span>
-              </div>
-              <div class="metadata-item" v-if="error.applicationName">
-                <span class="meta-label">Application</span>
-                <span class="meta-value">{{ error.applicationName }}</span>
-              </div>
-              <div class="metadata-item" v-if="error.source">
-                <span class="meta-label">Source</span>
-                <span class="meta-value font-mono text-break">{{ error.source }}</span>
-              </div>
-              <div class="metadata-item text-break span-full" v-if="error.url">
-                <span class="meta-label">URL</span>
-                <span class="meta-value font-mono select-all">
-                  <span class="method-badge" :class="getSeverityClass(error.statusCode)">{{ error.method }}</span>
-                  {{ error.url }}
+    <!-- Opacity transition on loading new error details -->
+    <div v-if="error" class="detail-content-wrapper">
+      <transition name="fade-fast" mode="out-in">
+        <div :key="error.id || props.id" class="detail-transition-container">
+          
+          <!-- Unified Error Details Header Section -->
+          <div class="unified-header-section mb-4">
+            <!-- Action Bar Row -->
+            <div class="action-bar-section">
+              <div class="action-top">
+                <span class="status-code-badge" :class="getSeverityClass(error.statusCode)">
+                  {{ error.statusCode || '500' }}
                 </span>
-              </div>
-            </div>
-          </div>
-          <div class="metadata-sidebar" v-if="error.os || error.browser">
-            <div class="client-icon-card" v-if="error.os">
-              <i class="pi" :class="[getOsIcon(error.os), 'os-icon-' + error.os.toLowerCase()]"></i>
-              <span class="client-label">{{ error.os }}</span>
-            </div>
-            <div class="client-icon-card" v-if="error.browser">
-              <i class="pi" :class="[getBrowserIcon(error.browser), 'browser-icon-' + error.browser.toLowerCase()]"></i>
-              <span class="client-label">{{ error.browser }}</span>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-
-    <!-- Detail Tabs -->
-    <div class="card detail-card" v-if="error">
-      <!-- Tabs Navigation -->
-      <div class="tabs-nav">
-        <button 
-          v-for="tab in tabs" 
-          :key="tab.id"
-          class="tab-btn" 
-          :class="{ 'active': activeTab === tab.id }"
-          @click="activeTab = tab.id"
-        >
-          <i :class="tab.icon + ' mr-1'"></i>
-          {{ tab.name }}
-        </button>
-      </div>
-
-      <!-- Tabs Content -->
-      <div class="tab-content">
-        <!-- 1. Overview Tab -->
-        <div v-if="activeTab === 'overview'" class="tab-pane">
-          <div class="info-grid">
-            <div class="info-item">
-              <span class="info-label">Exception Type</span>
-              <span class="info-value font-mono select-all">{{ error.type }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Error Message</span>
-              <span class="info-value text-danger font-bold">{{ error.message }}</span>
-            </div>
-          </div>
-        </div>
-
-        <!-- 2. Stack Trace Tab -->
-        <div v-if="activeTab === 'stacktrace'" class="tab-pane">
-          <!-- Syntax Highlighted Stack Trace Frame -->
-          <div class="stacktrace-container">
-            <div v-if="error.htmlMessage" class="stacktrace-html" v-html="formatHtmlMessage(error.htmlMessage)"></div>
-            <div v-else class="stacktrace-html" v-html="formatRawStackTrace(error.detail)"></div>
-          </div>
-
-          <!-- Source Code Preview (if available) -->
-          <div v-if="error.sources && error.sources.length > 0" class="source-previews mt-4">
-            <h3 class="section-title"><i class="pi pi-code mr-1"></i> Source Code Context</h3>
-            <div v-for="(src, idx) in error.sources" :key="idx" class="source-card card mb-3">
-              <div class="source-header">
-                <span class="source-file"><i class="pi pi-file mr-1"></i> {{ src.file }} : Line {{ src.line }}</span>
-                <span class="source-method">Method: {{ src.method }}</span>
-              </div>
-              <pre class="source-code"><code>{{ src.contextCode }}</code></pre>
-            </div>
-          </div>
-        </div>
-
-        <!-- 3. Request Parameters Tab -->
-        <div v-if="activeTab === 'request'" class="tab-pane">
-          <div class="request-tables">
-            <!-- Headers -->
-            <div v-if="hasItems(error.header)" class="request-section mb-4">
-              <h3 class="section-title"><i class="pi pi-envelope mr-1"></i> HTTP Request Headers</h3>
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Header Name</th>
-                    <th>Value</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(val, key) in error.header" :key="key">
-                    <td class="font-mono font-bold">{{ key }}</td>
-                    <td class="font-mono text-break select-all">{{ val }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <!-- Query String -->
-            <div v-if="hasItems(error.queryString)" class="request-section mb-4">
-              <h3 class="section-title"><i class="pi pi-question-circle mr-1"></i> Query String Parameters</h3>
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Parameter Key</th>
-                    <th>Value</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(val, key) in error.queryString" :key="key">
-                    <td class="font-mono font-bold text-primary">{{ key }}</td>
-                    <td class="font-mono select-all">{{ val }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <!-- Form Data / Cookies -->
-            <div v-if="hasItems(error.form)" class="request-section mb-4">
-              <h3 class="section-title"><i class="pi pi-list mr-1"></i> Form Fields</h3>
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Field Name</th>
-                    <th>Value</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(val, key) in error.form" :key="key">
-                    <td class="font-mono font-bold">{{ key }}</td>
-                    <td class="font-mono select-all">{{ val }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <!-- Cookies -->
-            <div v-if="hasItems(error.cookies)" class="request-section mb-4">
-              <h3 class="section-title"><i class="pi pi-database mr-1"></i> Cookies</h3>
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Cookie Name</th>
-                    <th>Value</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(val, key) in error.cookies" :key="key">
-                    <td class="font-mono font-bold">{{ key }}</td>
-                    <td class="font-mono select-all">{{ val }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-
-            <!-- Server Variables -->
-            <div v-if="hasItems(error.serverVariables)" class="request-section mb-4">
-              <h3 class="section-title"><i class="pi pi-server mr-1"></i> Server Variables</h3>
-              <table class="data-table">
-                <thead>
-                  <tr>
-                    <th>Variable Name</th>
-                    <th>Value</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr v-for="(val, key) in error.serverVariables" :key="key">
-                    <td class="font-mono font-bold">{{ key }}</td>
-                    <td class="font-mono select-all">{{ val }}</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </div>
-
-        <!-- 4. Request Body Tab -->
-        <div v-if="activeTab === 'body'" class="tab-pane">
-          <div class="body-container">
-            <div v-if="error.body" class="body-card">
-              <pre class="body-raw font-mono"><code>{{ formatBody(error.body) }}</code></pre>
-            </div>
-            <div v-else class="empty-state">
-              <i class="pi pi-info-circle empty-icon"></i>
-              <p>No request body logged for this error.</p>
-            </div>
-          </div>
-        </div>
-
-        <!-- 5. Method Parameters Tab -->
-        <div v-if="activeTab === 'params'" class="tab-pane">
-          <div class="params-container">
-            <div v-if="error.params && error.params.length > 0">
-              <div v-for="(paramEntry, idx) in error.params" :key="idx" class="param-card card mb-3">
-                <div class="param-header">
-                  <span class="param-method font-bold"><i class="pi pi-bolt mr-1"></i> {{ paramEntry.memberName }}</span>
-                  <span class="param-time text-light font-mono">{{ formatTime(paramEntry.timeStamp) }}</span>
+                <div class="error-meta">
+                  <div class="exception-type-tag font-mono">{{ error.type }}</div>
+                  <h1 class="error-message-detail">{{ error.message }}</h1>
                 </div>
-                <table class="data-table font-mono">
-                  <thead>
-                    <tr>
-                      <th width="200">Parameter</th>
-                      <th>Value</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    <tr v-for="kv in paramEntry.params" :key="kv.key">
-                      <td class="font-bold">{{ kv.key }}</td>
-                      <td class="select-all">{{ kv.value }}</td>
-                    </tr>
-                  </tbody>
-                </table>
+              </div>
+              
+              <div class="action-buttons mt-3">
+                <!-- Mark Reviewed Toggle -->
+                <button 
+                  class="btn btn-sm" 
+                  :class="error.isReviewed ? 'btn-success' : 'btn-secondary'"
+                  @click="toggleReviewed"
+                >
+                  <i :class="error.isReviewed ? 'pi pi-check-circle mr-1' : 'pi pi-circle mr-1'"></i>
+                  {{ error.isReviewed ? 'Reviewed' : 'Mark Reviewed' }}
+                </button>
+
+                <!-- Copy GUID -->
+                <button class="btn btn-secondary btn-sm" @click="copyToClipboard(props.id, 'Error ID copied!')" title="Copy Error GUID">
+                  <i class="pi pi-copy mr-1"></i> Copy GUID
+                </button>
+
+                <!-- Share -->
+                <button class="btn btn-secondary btn-sm" @click="shareLink" title="Copy Share Link">
+                  <i class="pi pi-share-alt mr-1"></i> Share
+                </button>
+
+                <!-- Delete -->
+                <button class="btn btn-danger btn-sm" @click="deleteError">
+                  <i class="pi pi-trash mr-1"></i> Delete
+                </button>
               </div>
             </div>
-            <div v-else class="empty-state">
-              <i class="pi pi-info-circle empty-icon"></i>
-              <p>No method parameters logged for this error. Logging method parameters requires calling <code>this.LogParams()</code> in C# code.</p>
-            </div>
-          </div>
-        </div>
 
-        <!-- SQL Log Tab -->
-        <div v-if="activeTab === 'sqllog'" class="tab-pane">
-          <div class="sqllog-container">
-            <div v-if="sqlEntries && sqlEntries.length > 0">
-              <div v-for="(sqlEntry, idx) in sqlEntries" :key="idx" class="sql-card card mb-3">
-                <div class="sql-header">
-                  <div class="header-left">
-                    <span class="sql-command-type badge" :class="sqlEntry.commandType?.toLowerCase() === 'storedprocedure' ? 'badge-warning' : 'badge-primary'">
-                      {{ sqlEntry.commandType || 'SQL' }}
-                    </span>
-                    <span class="sql-duration font-bold ml-2" :class="sqlEntry.durationMs > 100 ? 'text-danger' : 'text-success'">
-                      {{ sqlEntry.durationMs }} ms
-                    </span>
+            <!-- Metadata Section -->
+            <div class="metadata-section">
+              <div class="metadata-grid">
+                <div class="metadata-main">
+                  <div class="metadata-grid-cols">
+                    <div class="metadata-item">
+                      <span class="meta-label">When</span>
+                      <span class="meta-value font-mono">{{ formatTime(error.time) }}</span>
+                    </div>
+                    <div class="metadata-item" v-if="error.client">
+                      <span class="meta-label">Client IP</span>
+                      <span class="meta-value font-mono select-all">{{ error.client }}</span>
+                    </div>
+                    <div class="metadata-item" v-if="error.user">
+                      <span class="meta-label">User</span>
+                      <span class="meta-value select-all">{{ error.user }}</span>
+                    </div>
+                    <div class="metadata-item" v-if="error.hostName">
+                      <span class="meta-label">Host</span>
+                      <span class="meta-value font-mono">{{ error.hostName }}</span>
+                    </div>
+                    <div class="metadata-item" v-if="error.applicationName">
+                      <span class="meta-label">Application</span>
+                      <span class="meta-value">{{ error.applicationName }}</span>
+                    </div>
+                    <div class="metadata-item" v-if="error.source">
+                      <span class="meta-label">Source</span>
+                      <span class="meta-value font-mono text-break">{{ error.source }}</span>
+                    </div>
+                    <div class="metadata-item text-break span-full" v-if="error.url">
+                      <span class="meta-label">URL</span>
+                      <span class="meta-value font-mono select-all">
+                        <span class="method-badge" :class="getSeverityClass(error.statusCode)">{{ error.method }}</span>
+                        {{ error.url }}
+                      </span>
+                    </div>
                   </div>
-                  <span class="sql-time text-light font-mono">{{ formatTime(sqlEntry.timeStamp) }}</span>
                 </div>
-                <pre class="sql-text font-mono"><code>{{ sqlEntry.sqlText }}</code></pre>
+                <div class="metadata-sidebar" v-if="error.os || error.browser">
+                  <div class="client-icon-card" v-if="error.os">
+                    <i class="pi" :class="[getOsIcon(error.os), 'os-icon-' + error.os.toLowerCase()]"></i>
+                    <span class="client-label">{{ error.os }}</span>
+                  </div>
+                  <div class="client-icon-card" v-if="error.browser">
+                    <i class="pi" :class="[getBrowserIcon(error.browser), 'browser-icon-' + error.browser.toLowerCase()]"></i>
+                    <span class="client-label">{{ error.browser }}</span>
+                  </div>
+                </div>
               </div>
             </div>
-            <div v-else class="empty-state">
-              <i class="pi pi-database empty-icon"></i>
-              <p>No SQL queries logged for this error.</p>
-            </div>
           </div>
-        </div>
 
-        <!-- 6. Raw XML Tab -->
-        <div v-if="activeTab === 'rawxml'" class="tab-pane">
-          <div class="xml-container">
-            <div class="xml-actions mb-3">
-              <button class="btn btn-secondary btn-sm" @click="copyXml">
-                <i class="pi pi-copy mr-1"></i> Copy XML
+          <!-- Detail Tabs Container -->
+          <div class="detail-card">
+            <!-- Tabs Navigation -->
+            <div class="tabs-nav">
+              <button 
+                v-for="tab in tabs" 
+                :key="tab.id"
+                class="tab-btn" 
+                :class="{ 'active': activeTab === tab.id }"
+                @click="activeTab = tab.id"
+              >
+                <i :class="tab.icon + ' mr-1'"></i>
+                {{ tab.name }}
               </button>
             </div>
-            <pre class="xml-raw font-mono select-all"><code>{{ rawXml }}</code></pre>
+
+            <!-- Tabs Content -->
+            <div class="tab-content">
+              <!-- 1. Overview Tab -->
+              <div v-if="activeTab === 'overview'" class="tab-pane">
+                <div class="info-grid">
+                  <div class="info-item">
+                    <span class="info-label">Exception Type</span>
+                    <span class="info-value font-mono select-all">{{ error.type }}</span>
+                  </div>
+                  <div class="info-item">
+                    <span class="info-label">Error Message</span>
+                    <span class="info-value font-bold">{{ error.message }}</span>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 2. Stack Trace Tab -->
+              <div v-if="activeTab === 'stacktrace'" class="tab-pane">
+                <!-- Syntax Highlighted Stack Trace Frame -->
+                <div class="stacktrace-container">
+                  <div v-if="error.htmlMessage" class="stacktrace-html" v-html="formatHtmlMessage(error.htmlMessage)"></div>
+                  <div v-else class="stacktrace-html" v-html="formatRawStackTrace(error.detail)"></div>
+                </div>
+
+                <!-- Source Code Preview (if available) -->
+                <div v-if="error.sources && error.sources.length > 0" class="source-previews mt-4">
+                  <h3 class="section-title"><i class="pi pi-code mr-1"></i> Source Code Context</h3>
+                  <div v-for="(src, idx) in error.sources" :key="idx" class="source-card card mb-3">
+                    <div class="source-header">
+                      <span class="source-file"><i class="pi pi-file mr-1"></i> {{ src.file }} : Line {{ src.line }}</span>
+                      <span class="source-method">Method: {{ src.method }}</span>
+                    </div>
+                    <pre class="source-code"><code>{{ src.contextCode }}</code></pre>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 3. Request Parameters Tab -->
+              <div v-if="activeTab === 'request'" class="tab-pane">
+                <div class="request-tables">
+                  <!-- Headers -->
+                  <div v-if="hasItems(error.header)" class="request-section mb-4">
+                    <h3 class="section-title"><i class="pi pi-envelope mr-1"></i> HTTP Request Headers</h3>
+                    <table class="data-table">
+                      <thead>
+                        <tr>
+                          <th>Header Name</th>
+                          <th>Value</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(val, key) in error.header" :key="key">
+                          <td class="font-mono font-bold">{{ key }}</td>
+                          <td class="font-mono text-break select-all">{{ val }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Query String -->
+                  <div v-if="hasItems(error.queryString)" class="request-section mb-4">
+                    <h3 class="section-title"><i class="pi pi-question-circle mr-1"></i> Query String Parameters</h3>
+                    <table class="data-table">
+                      <thead>
+                        <tr>
+                          <th>Parameter Key</th>
+                          <th>Value</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(val, key) in error.queryString" :key="key">
+                          <td class="font-mono font-bold text-primary">{{ key }}</td>
+                          <td class="font-mono select-all">{{ val }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Form Data / Cookies -->
+                  <div v-if="hasItems(error.form)" class="request-section mb-4">
+                    <h3 class="section-title"><i class="pi pi-list mr-1"></i> Form Fields</h3>
+                    <table class="data-table">
+                      <thead>
+                        <tr>
+                          <th>Field Name</th>
+                          <th>Value</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(val, key) in error.form" :key="key">
+                          <td class="font-mono font-bold">{{ key }}</td>
+                          <td class="font-mono select-all">{{ val }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Cookies -->
+                  <div v-if="hasItems(error.cookies)" class="request-section mb-4">
+                    <h3 class="section-title"><i class="pi pi-database mr-1"></i> Cookies</h3>
+                    <table class="data-table">
+                      <thead>
+                        <tr>
+                          <th>Cookie Name</th>
+                          <th>Value</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(val, key) in error.cookies" :key="key">
+                          <td class="font-mono font-bold">{{ key }}</td>
+                          <td class="font-mono select-all">{{ val }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+
+                  <!-- Server Variables -->
+                  <div v-if="hasItems(error.serverVariables)" class="request-section mb-4">
+                    <h3 class="section-title"><i class="pi pi-server mr-1"></i> Server Variables</h3>
+                    <table class="data-table">
+                      <thead>
+                        <tr>
+                          <th>Variable Name</th>
+                          <th>Value</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        <tr v-for="(val, key) in error.serverVariables" :key="key">
+                          <td class="font-mono font-bold">{{ key }}</td>
+                          <td class="font-mono select-all">{{ val }}</td>
+                        </tr>
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 4. Request Body Tab -->
+              <div v-if="activeTab === 'body'" class="tab-pane">
+                <div class="body-container">
+                  <div v-if="error.body" class="body-card">
+                    <pre class="body-raw font-mono"><code>{{ formatBody(error.body) }}</code></pre>
+                  </div>
+                  <div v-else class="empty-state">
+                    <i class="pi pi-info-circle empty-icon"></i>
+                    <p>No request body logged for this error.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 5. Method Parameters Tab -->
+              <div v-if="activeTab === 'params'" class="tab-pane">
+                <div class="params-container">
+                  <div v-if="error.params && error.params.length > 0">
+                    <div v-for="(paramEntry, idx) in error.params" :key="idx" class="param-card mb-3">
+                      <div class="param-header">
+                        <span class="param-method font-bold"><i class="pi pi-bolt mr-1"></i> {{ paramEntry.memberName }}</span>
+                        <span class="param-time text-light font-mono">{{ formatTime(paramEntry.timeStamp) }}</span>
+                      </div>
+                      <table class="data-table font-mono">
+                        <thead>
+                          <tr>
+                            <th width="200">Parameter</th>
+                            <th>Value</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                          <tr v-for="kv in paramEntry.params" :key="kv.key">
+                            <td class="font-bold">{{ kv.key }}</td>
+                            <td class="select-all">{{ kv.value }}</td>
+                          </tr>
+                        </tbody>
+                      </table>
+                    </div>
+                  </div>
+                  <div v-else class="empty-state">
+                    <i class="pi pi-info-circle empty-icon"></i>
+                    <p>No method parameters logged for this error.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- SQL Log Tab -->
+              <div v-if="activeTab === 'sqllog'" class="tab-pane">
+                <div class="sqllog-container">
+                  <div v-if="sqlEntries && sqlEntries.length > 0">
+                    <div v-for="(sqlEntry, idx) in sqlEntries" :key="idx" class="sql-card mb-3">
+                      <div class="sql-header">
+                        <div class="header-left">
+                          <span class="sql-command-type badge" :class="sqlEntry.commandType?.toLowerCase() === 'storedprocedure' ? 'badge-warning' : 'badge-primary'">
+                            {{ sqlEntry.commandType || 'SQL' }}
+                          </span>
+                          <span class="sql-duration font-bold ml-2" :class="sqlEntry.durationMs > 100 ? 'text-danger' : 'text-success'">
+                            {{ sqlEntry.durationMs }} ms
+                          </span>
+                        </div>
+                        <span class="sql-time text-light font-mono">{{ formatTime(sqlEntry.timeStamp) }}</span>
+                      </div>
+                      <pre class="sql-text font-mono"><code>{{ sqlEntry.sqlText }}</code></pre>
+                    </div>
+                  </div>
+                  <div v-else class="empty-state">
+                    <i class="pi pi-database empty-icon"></i>
+                    <p>No SQL queries logged for this error.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- 6. Raw XML Tab -->
+              <div v-if="activeTab === 'rawxml'" class="tab-pane">
+                <div class="xml-container">
+                  <div class="xml-actions mb-3">
+                    <button class="btn btn-secondary btn-sm" @click="copyXml">
+                      <i class="pi pi-copy mr-1"></i> Copy XML
+                  </button>
+                  </div>
+                  <pre class="xml-raw font-mono select-all"><code>{{ rawXml }}</code></pre>
+                </div>
+              </div>
+            </div>
           </div>
+
         </div>
-      </div>
+      </transition>
     </div>
 
     <!-- Loading Placeholder -->
-    <div class="card loading-card" v-else>
+    <div class="loading-container" v-else>
       <div class="skeleton-title mb-3"></div>
       <div class="skeleton-para mb-2"></div>
       <div class="skeleton-para mb-2"></div>
@@ -379,6 +389,7 @@ import { useErrorStore } from '../stores/errorStore';
 import { elmahApi } from '../api/elmahApi';
 import { useToast } from 'primevue/usetoast';
 import dayjs from 'dayjs';
+import axios from 'axios';
 
 const props = defineProps({
   id: {
@@ -419,6 +430,7 @@ const prevId = computed(() => hasPrev.value ? errorListIds.value[currentIndex.va
 const nextId = computed(() => hasNext.value ? errorListIds.value[currentIndex.value + 1] : null);
 
 const fetchErrorDetails = async (id) => {
+  if (!id) return;
   error.value = null;
   rawXml.value = '';
   try {
@@ -492,7 +504,7 @@ const hasItems = (obj) => {
 };
 
 const formatTime = (time) => {
-  return dayjs(time).format('YYYY-MM-DD h:mm:ss.SSS A');
+  return dayjs(time).format('YYYY-MM-DD HH:mm:ss.SSS');
 };
 
 const getShortTypeName = (type) => {
@@ -545,20 +557,16 @@ const formatBody = (body) => {
 const formatHtmlMessage = (html) => {
   if (!html) return '';
 
-  // First handle the caller line replacement
   let processed = html.replace(/# caller: @([^\r\n]+)/g, (match, path) => {
     return `<span class="st-caller-line"># caller: <span class="st-caller-path">@${path}</span></span>`;
   });
 
-  // Split by line break to format exception headers and inner exceptions
   const lines = processed.split('\n').map(l => l.replace(/\r$/, ''));
   const formattedLines = lines.map(line => {
-    // If it contains st-frame span, it is already marked up by backend for frames
     if (line.includes('st-frame')) {
       return line;
     }
 
-    // Check for inner or outer exception: "(arrow)? ExceptionType: message"
     const excMatch = line.match(/^(\s*--->\s*|\s*---&gt;\s*)?([A-Za-z0-9_.]*Exception):\s*(.*)/);
     if (excMatch) {
       const arrow = excMatch[1] || '';
@@ -568,7 +576,6 @@ const formatHtmlMessage = (html) => {
       return `<span class="st-exception-line">${highlightedArrow}<span class="st-exception-type">${excType}</span>: <span class="st-exception-msg font-bold">${msg}</span></span>`;
     }
 
-    // Additional diagnostic lines (e.g., "File name: 'Newtonsoft.Json.dll'")
     if (line.trim().startsWith('File name:') || line.trim().startsWith('FileNotFoundException:') || line.trim().includes('Assembly:')) {
       return `<span class="st-diagnostic-line text-muted">${line}</span>`;
     }
@@ -581,7 +588,6 @@ const formatHtmlMessage = (html) => {
 
 const formatRawStackTrace = (text) => {
   if (!text) return '';
-  // Escape HTML entities to prevent XSS
   let escaped = text
     .replace(/&/g, '&amp;')
     .replace(/</g, '&lt;')
@@ -589,14 +595,13 @@ const formatRawStackTrace = (text) => {
 
   const lines = escaped.split('\n').map(l => l.replace(/\r$/, ''));
   const formattedLines = lines.map(line => {
-    // 1. Check for stack trace frame: starts with spaces followed by "at " or "   at "
     const atMatch = line.match(/^(\s*at\s+)([A-Za-z0-9_.\+<>`\[\]]+)\(([^)]*)\)(?:\s+in\s+(.*?):line\s+(\d+))?/);
     if (atMatch) {
-      const prefix = atMatch[1]; // "   at "
-      const fullMethod = atMatch[2]; // e.g. "Namespace.Class.Method"
-      const paramsText = atMatch[3]; // e.g. "String name, Int32 age"
-      const filePath = atMatch[4]; // e.g. "C:\path\to\file.cs"
-      const lineNum = atMatch[5]; // e.g. "123"
+      const prefix = atMatch[1];
+      const fullMethod = atMatch[2];
+      const paramsText = atMatch[3];
+      const filePath = atMatch[4];
+      const lineNum = atMatch[5];
 
       const methodParts = fullMethod.split('.');
       const method = methodParts.pop();
@@ -630,7 +635,6 @@ const formatRawStackTrace = (text) => {
       return `<span class="st-frame">${lineHtml}</span>`;
     }
 
-    // 2. Check for inner or outer exception
     const excMatch = line.match(/^(\s*--->\s*|\s*---&gt;\s*)?([A-Za-z0-9_.]*Exception):\s*(.*)/);
     if (excMatch) {
       const arrow = excMatch[1] || '';
@@ -640,7 +644,6 @@ const formatRawStackTrace = (text) => {
       return `<span class="st-exception-line">${highlightedArrow}<span class="st-exception-type">${excType}</span>: <span class="st-exception-msg font-bold">${msg}</span></span>`;
     }
 
-    // 3. Additional diagnostic lines
     if (line.trim().startsWith('File name:') || line.trim().startsWith('FileNotFoundException:') || line.trim().includes('Assembly:')) {
       return `<span class="st-diagnostic-line text-muted">${line}</span>`;
     }
@@ -653,75 +656,32 @@ const formatRawStackTrace = (text) => {
 
 // Listen for route ID changes (prev/next navigation)
 watch(() => props.id, (newId) => {
-  fetchErrorDetails(newId);
+  if (newId) {
+    fetchErrorDetails(newId);
+  }
 }, { immediate: true });
-
-// Axios fallback for XML fetching (if not imported globally)
-import axios from 'axios';
 </script>
 
 <style scoped>
 .error-detail-view {
   display: flex;
   flex-direction: column;
+  height: 100%;
+  padding: 1rem 1.5rem 1.5rem 1.5rem;
 }
 
-.card {
-  background-color: var(--panel-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
-}
-
-.mb-4 {
-  margin-bottom: 1rem;
-}
-
-.mb-3 {
-  margin-bottom: 0.75rem;
-}
-
-.mt-4 {
-  margin-top: 1.5rem;
-}
-
-.mr-1 {
-  margin-right: 0.25rem;
-}
-
-.ml-1 {
-  margin-left: 0.25rem;
-}
-
-.font-mono {
-  font-family: SFMono-Regular, Consolas, Monaco, monospace;
-}
-
-.font-bold {
-  font-weight: 700;
-}
-
-.select-all {
-  user-select: all;
-}
-
-.text-break {
-  word-break: break-all;
-}
-
-/* Header & Breadcrumb */
 .detail-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .breadcrumb {
   display: flex;
   align-items: center;
-  font-size: 0.9rem;
-  color: var(--text-light);
+  font-size: 0.85rem;
 }
 
 .breadcrumb-link {
@@ -736,103 +696,133 @@ import axios from 'axios';
 
 .breadcrumb-separator {
   margin: 0 0.5rem;
-  font-size: 0.75rem;
-}
-
-.detail-nav-buttons {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-}
-
-.nav-position-text {
-  font-size: 0.85rem;
   color: var(--text-light);
+  font-size: 0.7rem;
 }
 
-/* Action Bar Card */
-.action-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-  border-left: 4px solid var(--error-color);
+.breadcrumb-current {
+  color: var(--text-color);
+  font-weight: 500;
 }
 
-.action-left {
+.detail-content-wrapper {
   display: flex;
-  align-items: center;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+  margin-top: 1rem;
+}
+
+.detail-transition-container {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
+}
+
+/* Unified Header Section */
+.unified-header-section {
+  display: flex;
+  flex-direction: column;
+  border: none;
+  background: transparent;
+}
+
+.action-bar-section {
+  padding-bottom: 1.25rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.action-top {
+  display: flex;
+  align-items: flex-start;
   gap: 1rem;
 }
 
 .status-code-badge {
-  padding: 0.4rem 0.8rem;
-  border-radius: 8px;
-  font-size: 1.15rem;
-  font-weight: 800;
+  padding: 0.35rem 0.75rem;
+  border-radius: 0;
+  font-size: 1.1rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+  min-width: 50px;
+  text-align: center;
+  color: white;
 }
 
 .status-code-badge.error {
-  background-color: #fee2e2;
-  color: #ef4444;
-}
-
-html.dark-mode .status-code-badge.error {
-  background-color: #7f1d1d;
-  color: #fca5a5;
+  background-color: var(--error-color);
 }
 
 .status-code-badge.warning {
-  background-color: #fef3c7;
-  color: #d97706;
+  background-color: var(--warning-color);
 }
 
 .status-code-badge.success {
-  background-color: #d1fae5;
-  color: #10b981;
+  background-color: var(--success-color);
+}
+
+.status-code-badge.info {
+  background-color: var(--primary-color);
 }
 
 .error-meta {
   display: flex;
   flex-direction: column;
+  flex: 1;
+  min-width: 0;
 }
 
-.error-title {
-  margin: 0 0 0.25rem 0;
-  font-size: 1.25rem;
-  font-weight: 700;
-}
-
-.error-subtitle {
-  margin: 0 0 0.5rem 0;
+.exception-type-tag {
+  display: inline-block;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  font-weight: 600;
+  background-color: var(--border-color);
   color: var(--text-color);
-  font-size: 0.9rem;
-  line-height: 1.4;
-  opacity: 0.9;
+  padding: 0.2rem 0.5rem;
+  margin-bottom: 0.5rem;
+  align-self: flex-start;
+  word-break: break-all;
 }
 
-.action-right {
+.error-message-detail {
+  font-size: 16px;
+  font-weight: 500;
+  line-height: 1.5;
+  color: var(--text-color);
+  margin: 0;
+}
+
+.action-buttons {
   display: flex;
-  gap: 0.5rem;
+  flex-wrap: wrap;
+  gap: 0.35rem;
 }
 
 .btn {
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
+  padding: 0.35rem 0.75rem;
+  border-radius: 0 !important;
   font-weight: 600;
-  font-size: 0.875rem;
+  font-size: 0.8rem;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
   border: 1px solid transparent;
-  transition: all 0.2s;
+  transition: all 0.15s;
+}
+
+.btn-icon {
+  width: 28px;
+  height: 28px;
+  padding: 0;
 }
 
 .btn-sm {
-  padding: 0.35rem 0.75rem;
-  font-size: 0.8rem;
-  border-radius: 6px;
+  padding: 0.25rem 0.5rem;
+  font-size: 0.75rem;
 }
 
 .btn-success {
@@ -855,426 +845,34 @@ html.dark-mode .status-code-badge.error {
   color: white;
 }
 
-/* Detail Card & Tabs */
-.detail-card {
-  padding: 0;
-  overflow: hidden;
+.btn-danger:hover {
+  filter: brightness(0.9);
 }
 
-.tabs-nav {
-  display: flex;
-  background-color: var(--bg-color);
-  border-bottom: 1px solid var(--border-color);
-  padding: 0 1rem;
-  overflow-x: auto;
-}
-
-.tab-btn {
-  background: none;
-  border: none;
-  padding: 1rem 1.25rem;
-  color: var(--text-light);
-  cursor: pointer;
-  font-weight: 600;
-  font-size: 0.9rem;
-  border-bottom: 2px solid transparent;
-  transition: all 0.2s;
-  display: flex;
-  align-items: center;
-  white-space: nowrap;
-}
-
-.tab-btn:hover {
-  color: var(--text-color);
-}
-
-.tab-btn.active {
-  color: var(--primary-color);
-  border-bottom-color: var(--primary-color);
-}
-
-.tab-content {
-  padding: 1.5rem;
-}
-
-/* Overview Info Grid */
-.info-grid {
-  display: grid;
-  grid-template-columns: 1fr;
-  gap: 1.25rem;
-}
-
-.info-item {
-  display: flex;
-  flex-direction: column;
-  gap: 0.25rem;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 0.75rem;
-}
-
-.info-item:last-child {
-  border-bottom: none;
-  padding-bottom: 0;
-}
-
-.info-label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--text-light);
-  text-transform: uppercase;
-}
-
-.info-value {
-  font-size: 0.95rem;
-  color: var(--text-color);
-  word-break: break-word;
-}
-
-.method-tag {
-  background-color: var(--primary-color);
-  color: white;
-  padding: 0.1rem 0.4rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  margin-right: 0.5rem;
-}
-
-/* Stack Trace */
-.stacktrace-container {
-  background-color: #f8fafc;
-  color: #0f172a; /* high contrast dark text */
-  border: 1px solid var(--border-color);
-  padding: 1.5rem;
-  border-radius: 8px;
-  overflow: auto;
-  max-height: 500px;
-}
-
-html.dark-mode .stacktrace-container {
-  background-color: #0f172a; /* very dark slate */
-  color: #f1f5f9; /* high contrast off-white */
-}
-
-.stacktrace-raw {
-  margin: 0;
-  font-family: SFMono-Regular, Consolas, Monaco, monospace;
-  font-size: 0.85rem;
-  white-space: pre-wrap;
-}
-
-:deep(.stacktrace-html) {
-  font-family: SFMono-Regular, Consolas, Monaco, monospace;
-  font-size: 0.85rem;
-  line-height: 1.6;
-  white-space: pre-wrap;
-}
-
-:deep(.stacktrace-html a) {
-  color: #0284c7;
-  text-decoration: underline;
-}
-
-:deep(.st-frame) {
-  display: block;
-  padding: 0.1rem 0;
-}
-
-:deep(.st-type) {
-  color: #2563eb; /* royal blue */
-  font-weight: 600;
-}
-
-:deep(.st-method) {
-  color: #0d9488; /* vibrant teal */
-  font-weight: 700;
-}
-
-:deep(.params) {
-  color: #475569; /* dark gray parens */
-}
-
-:deep(.st-param-type) {
-  color: #1d4ed8; /* blue for param types */
-}
-
-:deep(.st-param-name) {
-  color: #475569; /* gray for parameter names */
-  font-style: italic;
-}
-
-:deep(.st-file) {
-  color: #c026d3; /* magenta/purple for source files */
-  margin-left: 0.5rem;
-}
-
-:deep(.st-line) {
-  color: #c026d3; /* magenta/purple for line numbers */
-  font-weight: bold;
-}
-
-:deep(.st-caller-line) {
-  display: block;
-  background-color: var(--primary-light);
-  color: var(--primary-color);
-  padding: 0.5rem 0.75rem;
-  border-radius: 6px;
-  border: 1px solid var(--border-color);
-  margin-bottom: 0.75rem;
-  font-weight: 600;
-}
-
-:deep(.st-caller-path) {
-  color: #b91c1c;
-  font-weight: 700;
-  text-decoration: underline;
-}
-
-:deep(.st-exception-type) {
-  color: #be185d; /* rose for exception types */
-  font-weight: bold;
-}
-
-:deep(.st-exception-msg) {
-  color: #0f172a; /* dark slate for exception messages */
-}
-
-html.dark-mode :deep(.st-type) {
-  color: #60a5fa; /* bright sky blue */
-}
-
-html.dark-mode :deep(.st-method) {
-  color: #2dd4bf; /* bright teal */
-}
-
-html.dark-mode :deep(.params) {
-  color: #94a3b8;
-}
-
-html.dark-mode :deep(.st-param-type) {
-  color: #93c5fd;
-}
-
-html.dark-mode :deep(.st-param-name) {
-  color: #cbd5e1;
-}
-
-html.dark-mode :deep(.st-file) {
-  color: #f472b6; /* pink/magenta for files */
-}
-
-html.dark-mode :deep(.st-line) {
-  color: #f472b6; /* pink/magenta for lines */
-}
-
-html.dark-mode :deep(.st-exception-type) {
-  color: #fda4af;
-}
-
-html.dark-mode :deep(.st-exception-msg) {
-  color: #f1f5f9;
-}
-
-/* Source Context Code */
-.source-card {
-  border-top: 2px solid var(--success-color);
-  padding: 0;
-}
-
-.source-header {
-  background-color: var(--bg-color);
-  padding: 0.5rem 1rem;
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  justify-content: space-between;
-  font-size: 0.8rem;
-  color: var(--text-light);
-}
-
-.source-code {
-  margin: 0;
-  padding: 1rem;
-  background-color: #1e293b;
-  color: #e2e8f0;
-  font-size: 0.825rem;
-  overflow-x: auto;
-}
-
-/* Request parameters Table style */
-.data-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.85rem;
-}
-
-.data-table th,
-.data-table td {
-  padding: 0.5rem 0.75rem;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.data-table th {
-  text-align: left;
-  background-color: var(--bg-color);
-  color: var(--text-light);
-  font-weight: 600;
-}
-
-/* Request Body and parameters styling */
-.body-card {
-  background-color: var(--bg-color);
-  border: 1px solid var(--border-color);
-  border-radius: 8px;
-  padding: 1rem;
-}
-
-.body-raw {
-  margin: 0;
-  font-size: 0.85rem;
-  white-space: pre-wrap;
-  word-break: break-all;
-}
-
-.param-card {
-  padding: 0;
-}
-
-.param-header {
-  padding: 0.5rem 1rem;
-  background-color: var(--bg-color);
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-
-.xml-raw {
-  background-color: var(--bg-color);
-  padding: 1rem;
-  border-radius: 8px;
-  overflow: auto;
-  max-height: 400px;
-  font-size: 0.825rem;
-  white-space: pre-wrap;
-}
-
-/* Skeletons */
-.loading-card {
-  display: flex;
-  flex-direction: column;
-}
-
-.skeleton-title {
-  height: 30px;
-  width: 40%;
-  background: var(--border-color);
-  border-radius: 4px;
-}
-
-.skeleton-para {
-  height: 20px;
-  background: var(--border-color);
-  border-radius: 4px;
-}
-
-/* SQL Log Tab Styling */
-.sql-card {
-  padding: 0 !important;
-  overflow: hidden;
-}
-
-.sql-header {
-  background-color: var(--bg-color);
-  border-bottom: 1px solid var(--border-color);
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0.5rem 1rem;
-}
-
-.sql-text {
-  background-color: #1e293b;
-  color: #38bdf8;
-  padding: 1rem;
-  margin: 0;
-  white-space: pre-wrap;
-  word-break: break-all;
-  font-size: 0.85rem;
-  max-height: 300px;
-  overflow-y: auto;
-}
-
-.badge-primary {
-  background-color: var(--primary-light);
-  color: var(--primary-color);
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-.badge-warning {
-  background-color: #fef3c7;
-  color: #d97706;
-  padding: 0.2rem 0.5rem;
-  border-radius: 4px;
-  font-size: 0.75rem;
-  font-weight: 700;
-}
-
-/* Unified Header Card styling */
-.unified-header-card {
-  padding: 0 !important;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-}
-
-.unified-header-card.error {
-  border-left: 4px solid var(--error-color);
-}
-.unified-header-card.warning {
-  border-left: 4px solid var(--warning-color);
-}
-.unified-header-card.success {
-  border-left: 4px solid var(--success-color);
-}
-.unified-header-card.info {
-  border-left: 4px solid var(--primary-color);
-}
-
-.action-bar-section {
-  padding: 0.6rem 0.8rem;
-}
-
+/* Metadata Section */
 .metadata-section {
-  background-color: #f0f9ff;
-  border-top: 1px solid #bae6fd;
-  padding: 0.6rem 0.8rem;
-}
-
-html.dark-mode .metadata-section {
-  background-color: #0c4a6e;
-  border-top-color: #0284c7;
+  padding: 1.25rem 0;
+  border-bottom: 1px solid var(--border-color);
+  background: transparent;
 }
 
 .metadata-grid {
   display: flex;
   justify-content: space-between;
-  gap: 1rem;
+  gap: 1.5rem;
 }
 
 .metadata-main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.35rem;
+  gap: 0.5rem;
 }
 
 .metadata-grid-cols {
   display: grid;
   grid-template-columns: repeat(3, 1fr);
-  gap: 0.35rem 1rem;
+  gap: 0.75rem 1rem;
 }
 
 .metadata-item.span-full {
@@ -1284,19 +882,16 @@ html.dark-mode .metadata-section {
 .metadata-item {
   display: flex;
   flex-direction: column;
-  gap: 0.1rem;
-  min-width: 120px;
+  gap: 0.2rem;
+  min-width: 100px;
 }
 
-.meta-label {
-  font-size: 0.65rem;
-  font-weight: 700;
+.meta-label, .info-label {
+  font-size: 10px;
+  font-weight: 400;
   text-transform: uppercase;
-  color: #0369a1;
-}
-
-html.dark-mode .meta-label {
-  color: #38bdf8;
+  letter-spacing: 0.1em;
+  color: var(--text-light) !important;
 }
 
 .meta-value {
@@ -1309,7 +904,6 @@ html.dark-mode .meta-label {
   background-color: var(--primary-color);
   color: white;
   padding: 0.05rem 0.3rem;
-  border-radius: 4px;
   font-size: 0.65rem;
   font-weight: 700;
   margin-right: 0.4rem;
@@ -1330,12 +924,8 @@ html.dark-mode .meta-label {
   display: flex;
   gap: 0.5rem;
   align-items: center;
-  border-left: 1px solid #bae6fd;
+  border-left: 1px solid var(--border-color);
   padding-left: 1rem;
-}
-
-html.dark-mode .metadata-sidebar {
-  border-left-color: #0284c7;
 }
 
 .client-icon-card {
@@ -1343,21 +933,16 @@ html.dark-mode .metadata-sidebar {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  background-color: rgba(255, 255, 255, 0.4);
-  border: 1px solid rgba(2, 132, 199, 0.15);
-  border-radius: 6px;
+  background-color: transparent;
+  border: 1px solid var(--border-color);
+  border-radius: 0;
   padding: 0.35rem 0.5rem;
   min-width: 65px;
   text-align: center;
 }
 
-html.dark-mode .client-icon-card {
-  background-color: rgba(0, 0, 0, 0.2);
-  border-color: rgba(2, 132, 199, 0.3);
-}
-
 .client-icon-card i {
-  font-size: 1.25rem;
+  font-size: 1.1rem;
   margin-bottom: 0.2rem;
 }
 
@@ -1367,15 +952,373 @@ html.dark-mode .client-icon-card {
   color: var(--text-color);
 }
 
+/* Detail Card & Tabs */
+.detail-card {
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  margin-bottom: 1.5rem;
+}
+
+.tabs-nav {
+  display: flex;
+  background: transparent;
+  border-bottom: 1px solid var(--border-color);
+  padding: 0;
+  overflow-x: auto;
+  margin-bottom: 1rem;
+}
+
+.tab-btn {
+  background: none;
+  border: none;
+  padding: 0.5rem 1rem;
+  color: var(--text-light);
+  cursor: pointer;
+  font-weight: 500;
+  font-size: 0.85rem;
+  border-bottom: 2px solid transparent;
+  transition: all 150ms ease-in-out;
+  display: flex;
+  align-items: center;
+  white-space: nowrap;
+}
+
+.tab-btn:hover {
+  color: var(--text-color);
+  border-bottom-color: var(--border-color);
+}
+
+.tab-btn.active {
+  color: var(--primary-color) !important;
+  border-bottom-color: var(--primary-color) !important;
+}
+
+.tab-content {
+  padding: 0.5rem 0;
+  overflow-y: auto;
+  flex: 1;
+}
+
+/* Overview Info Grid */
+.info-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+.info-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  border-bottom: 1px solid var(--border-color);
+  padding-bottom: 0.75rem;
+}
+
+.info-item:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
+}
+
+.info-value {
+  font-size: 0.85rem;
+  color: var(--text-color);
+  word-break: break-word;
+}
+
+/* Stack Trace */
+.stacktrace-container {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  border: 1px solid var(--border-color);
+  padding: 1rem;
+  border-radius: 0;
+  overflow: auto;
+  max-height: 500px;
+}
+
+:deep(.stacktrace-html) {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+:deep(.stacktrace-html a) {
+  color: var(--primary-color);
+  text-decoration: underline;
+}
+
+:deep(.st-frame) {
+  display: block;
+  padding: 0.1rem 0;
+}
+
+:deep(.st-type) {
+  color: #2563eb;
+  font-weight: 600;
+}
+
+:deep(.st-method) {
+  color: #0d9488;
+  font-weight: 700;
+}
+
+:deep(.params) {
+  color: var(--text-light);
+}
+
+:deep(.st-param-type) {
+  color: #1d4ed8;
+}
+
+:deep(.st-param-name) {
+  color: var(--text-light);
+  font-style: italic;
+}
+
+:deep(.st-file) {
+  color: #c026d3;
+  margin-left: 0.5rem;
+}
+
+:deep(.st-line) {
+  color: #c026d3;
+  font-weight: bold;
+}
+
+:deep(.st-caller-line) {
+  display: block;
+  background-color: var(--border-color);
+  color: var(--text-color);
+  padding: 0.5rem 0.75rem;
+  border-radius: 0;
+  border: 1px solid var(--border-color);
+  margin-bottom: 0.75rem;
+  font-weight: 600;
+  font-family: var(--font-mono);
+}
+
+:deep(.st-caller-path) {
+  color: var(--error-color);
+  font-weight: 700;
+  text-decoration: underline;
+}
+
+:deep(.st-exception-type) {
+  color: var(--error-color);
+  font-weight: bold;
+}
+
+:deep(.st-exception-msg) {
+  color: var(--text-color);
+}
+
+html.dark-mode :deep(.st-type) {
+  color: #60a5fa;
+}
+
+html.dark-mode :deep(.st-method) {
+  color: #2dd4bf;
+}
+
+html.dark-mode :deep(.st-param-type) {
+  color: #93c5fd;
+}
+
+html.dark-mode :deep(.st-param-name) {
+  color: #cbd5e1;
+}
+
+html.dark-mode :deep(.st-file) {
+  color: #f472b6;
+}
+
+html.dark-mode :deep(.st-line) {
+  color: #f472b6;
+}
+
+html.dark-mode :deep(.st-exception-type) {
+  color: #fda4af;
+}
+
+html.dark-mode :deep(.st-exception-msg) {
+  color: #f1f5f9;
+}
+
+/* Source Context Code */
+.source-card {
+  border-top: 1px solid var(--border-color);
+  padding: 0;
+}
+
+.source-header {
+  background-color: var(--bg-color);
+  padding: 0.5rem 1rem;
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.8rem;
+  color: var(--text-light);
+  font-family: var(--font-mono);
+}
+
+.source-code {
+  margin: 0;
+  padding: 1rem;
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  font-size: 0.8rem;
+  overflow-x: auto;
+  border: 1px solid var(--border-color);
+  font-family: var(--font-mono);
+}
+
+/* Request parameters Table style */
+.data-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.8rem;
+  margin-top: 0.5rem;
+}
+
+.data-table th,
+.data-table td {
+  padding: 0.4rem 0.6rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.data-table th {
+  text-align: left;
+  background-color: var(--bg-color);
+  color: var(--text-light);
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.05em;
+}
+
+/* Request Body and parameters styling */
+.body-card {
+  background-color: var(--bg-color);
+  border: 1px solid var(--border-color);
+  padding: 1rem;
+}
+
+.body-raw {
+  margin: 0;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+  word-break: break-all;
+}
+
+.param-card {
+  padding: 0;
+  border: 1px solid var(--border-color);
+}
+
+.param-header {
+  padding: 0.4rem 0.8rem;
+  background-color: var(--bg-color);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.xml-raw {
+  background-color: var(--bg-color);
+  padding: 1rem;
+  border: 1px solid var(--border-color);
+  overflow: auto;
+  max-height: 350px;
+  font-size: 0.8rem;
+  white-space: pre-wrap;
+}
+
+/* Skeletons & placeholders */
+.loading-container {
+  display: flex;
+  flex-direction: column;
+  padding: 2rem;
+}
+
+.skeleton-title {
+  height: 25px;
+  width: 40%;
+  background: var(--border-color);
+}
+
+.skeleton-para {
+  height: 18px;
+  background: var(--border-color);
+}
+
+/* SQL Log Tab Styling */
+.sql-card {
+  border: 1px solid var(--border-color);
+  overflow: hidden;
+}
+
+.sql-header {
+  background-color: var(--bg-color);
+  border-bottom: 1px solid var(--border-color);
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 1rem;
+}
+
+.sql-text {
+  background-color: var(--bg-color);
+  color: var(--text-color);
+  padding: 1rem;
+  margin: 0;
+  white-space: pre-wrap;
+  word-break: break-all;
+  font-size: 0.85rem;
+  max-height: 300px;
+  overflow-y: auto;
+  font-family: var(--font-mono);
+  border-top: 1px solid var(--border-color);
+}
+
+.badge-primary {
+  background-color: var(--border-color);
+  color: var(--text-color);
+  padding: 0.2rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+.badge-warning {
+  background-color: var(--warning-color);
+  color: white;
+  padding: 0.2rem 0.5rem;
+  font-size: 0.7rem;
+  font-weight: 700;
+  font-family: var(--font-mono);
+}
+
+/* Fast Opacity Fade transition */
+.fade-fast-enter-active,
+.fade-fast-leave-active {
+  transition: opacity 150ms ease-in-out;
+}
+
+.fade-fast-enter-from,
+.fade-fast-leave-to {
+  opacity: 0;
+}
+
 /* Icon Colors */
 .pi.os-icon-windows {
   color: #0078d4;
 }
 .pi.os-icon-macintosh, .pi.os-icon-iphone, .pi.os-icon-ipad {
-  color: #555555;
-}
-html.dark-mode .pi.os-icon-macintosh, html.dark-mode .pi.os-icon-iphone, html.dark-mode .pi.os-icon-ipad {
-  color: #f1f5f9;
+  color: var(--text-color);
 }
 .pi.os-icon-android {
   color: #3ddc84;
@@ -1389,7 +1332,7 @@ html.dark-mode .pi.os-icon-macintosh, html.dark-mode .pi.os-icon-iphone, html.da
 .pi.browser-icon-firefox {
   color: #ff7139;
 }
-.pi.browser-icon-safari, .pi.browser-icon-androidbrowser {
+.pi.browser-icon-safari {
   color: #0070c9;
 }
 .pi.browser-icon-edge {
@@ -1399,6 +1342,14 @@ html.dark-mode .pi.os-icon-macintosh, html.dark-mode .pi.os-icon-iphone, html.da
   color: #cc0f35;
 }
 .pi.browser-icon-bot {
-  color: #64748b;
+  color: var(--text-light);
+}
+
+.section-title {
+  font-family: var(--font-mono);
+  font-size: 0.85rem;
+  font-weight: 700;
+  margin: 1.5rem 0 0.5rem 0;
+  color: var(--text-color);
 }
 </style>
