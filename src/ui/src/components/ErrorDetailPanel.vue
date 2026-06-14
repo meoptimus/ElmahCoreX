@@ -1130,13 +1130,13 @@ html.dark-mode .status-code-badge.error {
 }
 
 .action-bar-section {
-  padding: 1.25rem;
+  padding: 0.6rem 0.8rem;
 }
 
 .metadata-section {
   background-color: #f0f9ff;
   border-top: 1px solid #bae6fd;
-  padding: 1.25rem;
+  padding: 0.6rem 0.8rem;
 }
 
 html.dark-mode .metadata-section {
@@ -1147,31 +1147,31 @@ html.dark-mode .metadata-section {
 .metadata-grid {
   display: flex;
   justify-content: space-between;
-  gap: 1.5rem;
+  gap: 1rem;
 }
 
 .metadata-main {
   flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
+  gap: 0.35rem;
 }
 
 .metadata-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 1.5rem;
+  gap: 0.5rem 1.25rem;
 }
 
 .metadata-item {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  min-width: 150px;
+  gap: 0.1rem;
+  min-width: 120px;
 }
 
 .meta-label {
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   font-weight: 700;
   text-transform: uppercase;
   color: #0369a1;
@@ -1182,7 +1182,7 @@ html.dark-mode .meta-label {
 }
 
 .meta-value {
-  font-size: 0.9rem;
+  font-size: 0.8rem;
   color: var(--text-color);
   word-break: break-all;
 }
@@ -1190,11 +1190,11 @@ html.dark-mode .meta-label {
 .method-badge {
   background-color: var(--primary-color);
   color: white;
-  padding: 0.1rem 0.4rem;
+  padding: 0.05rem 0.3rem;
   border-radius: 4px;
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   font-weight: 700;
-  margin-right: 0.5rem;
+  margin-right: 0.4rem;
   text-transform: uppercase;
 }
 
@@ -1210,10 +1210,10 @@ html.dark-mode .meta-label {
 
 .metadata-sidebar {
   display: flex;
-  gap: 1rem;
+  gap: 0.5rem;
   align-items: center;
   border-left: 1px solid #bae6fd;
-  padding-left: 1.5rem;
+  padding-left: 1rem;
 }
 
 html.dark-mode .metadata-sidebar {
@@ -1227,9 +1227,9 @@ html.dark-mode .metadata-sidebar {
   justify-content: center;
   background-color: rgba(255, 255, 255, 0.4);
   border: 1px solid rgba(2, 132, 199, 0.15);
-  border-radius: 8px;
-  padding: 0.75rem;
-  min-width: 80px;
+  border-radius: 6px;
+  padding: 0.35rem 0.5rem;
+  min-width: 65px;
   text-align: center;
 }
 
@@ -1239,12 +1239,12 @@ html.dark-mode .client-icon-card {
 }
 
 .client-icon-card i {
-  font-size: 2rem;
-  margin-bottom: 0.35rem;
+  font-size: 1.25rem;
+  margin-bottom: 0.2rem;
 }
 
 .client-label {
-  font-size: 0.75rem;
+  font-size: 0.65rem;
   font-weight: 600;
   color: var(--text-color);
 }
