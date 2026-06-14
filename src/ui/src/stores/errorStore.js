@@ -24,7 +24,8 @@ export const useErrorStore = defineStore('error', {
     selectedIds: [],
     autoRefreshInterval: 0, // 0 = off, otherwise in seconds
     refreshTimer: null,
-    backendOnline: true
+    backendOnline: true,
+    notifications: []
   }),
 
   getters: {
@@ -63,7 +64,18 @@ export const useErrorStore = defineStore('error', {
         const pageSizeToLoad = this.errors.length || this.pageSize;
         const res = await elmahApi.getErrors(0, pageSizeToLoad, this.filters);
         if (res.success && res.data) {
-          this.errors = res.data.errors || [];
+          const newErrors = res.data.errors || [];
+          
+          // Detect new errors since last load
+          if (this.errors.length > 0) {
+            const oldIds = new Set(this.errors.map(e => e.id));
+            const newAdded = newErrors.filter(e => !oldIds.has(e.id));
+            if (newAdded.length > 0) {
+              this.showNewErrorNotification(newAdded);
+            }
+          }
+
+          this.errors = newErrors;
           this.totalCount = res.data.totalCount || 0;
         }
         this.backendOnline = true;
@@ -183,6 +195,31 @@ export const useErrorStore = defineStore('error', {
         this.backendOnline = false;
         return false;
       }
+    },
+
+    showNewErrorNotification(newErrors) {
+      const count = newErrors.length;
+      const latestError = newErrors[0]?.error;
+      const message = count === 1 
+        ? `New error: ${latestError?.message || 'Logged successfully'}`
+        : `${count} new errors have been logged`;
+      
+      const id = Date.now();
+      this.notifications.push({
+        id,
+        message,
+        type: latestError?.severity || 'Error',
+        count
+      });
+
+      // Auto dismiss after 6 seconds
+      setTimeout(() => {
+        this.removeNotification(id);
+      }, 6000);
+    },
+
+    removeNotification(id) {
+      this.notifications = this.notifications.filter(n => n.id !== id);
     }
   }
 });

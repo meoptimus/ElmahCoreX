@@ -139,6 +139,29 @@
         </div>
       </div>
     </Transition>
+
+    <!-- Toaster Notifications -->
+    <div class="toaster-container">
+      <transition-group name="toast">
+        <div 
+          v-for="toast in store.notifications" 
+          :key="toast.id" 
+          class="toast-item"
+          :class="'severity-' + toast.type.toLowerCase()"
+          @click="removeToast(toast.id)"
+        >
+          <div class="toast-icon">
+            <i class="pi pi-bell"></i>
+          </div>
+          <div class="toast-content">
+            <span class="toast-message">{{ toast.message }}</span>
+          </div>
+          <button class="toast-close">
+            <i class="pi pi-times"></i>
+          </button>
+        </div>
+      </transition-group>
+    </div>
   </div>
 </template>
 
@@ -150,6 +173,10 @@ import Toast from 'primevue/toast';
 
 const store = useErrorStore();
 const route = useRoute();
+
+const removeToast = (id) => {
+  store.removeNotification(id);
+};
 
 const elmahRoot = window.$elmah_root || '/elmah';
 const cleanRoot = '/' + elmahRoot.replace(/^\/|\/$/g, '');
@@ -649,5 +676,121 @@ body {
   font-family: inherit;
   text-align: left;
   outline: none;
+}
+
+/* Toaster Notifications */
+.toaster-container {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  pointer-events: none;
+}
+
+.toast-item {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  min-width: 300px;
+  max-width: 400px;
+  background-color: rgba(255, 255, 255, 0.95);
+  backdrop-filter: blur(8px);
+  border: 1px solid var(--border-color);
+  border-left: 4px solid var(--primary-color);
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+  border-radius: 8px;
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+html.dark-mode .toast-item {
+  background-color: rgba(30, 41, 59, 0.95);
+  border-color: rgba(255, 255, 255, 0.1);
+}
+
+.toast-item:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.15), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+}
+
+/* Severity borders */
+.toast-item.severity-info {
+  border-left-color: #3b82f6;
+}
+.toast-item.severity-success {
+  border-left-color: #10b981;
+}
+.toast-item.severity-warning {
+  border-left-color: #f59e0b;
+}
+.toast-item.severity-error {
+  border-left-color: #ef4444;
+}
+
+.toast-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+  font-size: 1.1rem;
+}
+
+.toast-item.severity-error .toast-icon {
+  color: #ef4444;
+}
+.toast-item.severity-warning .toast-icon {
+  color: #f59e0b;
+}
+.toast-item.severity-success .toast-icon {
+  color: #10b981;
+}
+
+.toast-content {
+  flex: 1;
+}
+
+.toast-message {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.toast-close {
+  background: none;
+  border: none;
+  color: var(--text-light);
+  cursor: pointer;
+  padding: 0.2rem;
+  display: flex;
+  align-items: center;
+  opacity: 0.6;
+  transition: opacity 0.2s;
+}
+
+.toast-close:hover {
+  opacity: 1;
+}
+
+/* Toast Transitions */
+.toast-enter-from {
+  opacity: 0;
+  transform: translateX(100px) scale(0.9);
+}
+.toast-enter-to {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+.toast-leave-from {
+  opacity: 1;
+  transform: translateX(0) scale(1);
+}
+.toast-leave-to {
+  opacity: 0;
+  transform: translateX(100px) scale(0.9);
 }
 </style>

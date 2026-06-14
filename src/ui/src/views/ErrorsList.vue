@@ -1301,7 +1301,7 @@ html.dark-mode .status-code-subtle.info {
 
 /* Infinite Scroll Footer Styling */
 .infinite-scroll-footer {
-  padding: 0.75rem 1.25rem;
+  padding: 2px 12px;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1319,20 +1319,14 @@ html.dark-mode .status-code-subtle.info {
 }
 
 /* Card Severity Borders */
-.error-card {
-  border-left: 4px solid var(--border-color);
-}
 .error-card.severity-info {
-  border-left-color: #3b82f6 !important;
+  border-left: 4px solid #3b82f6 !important;
 }
 .error-card.severity-success {
-  border-left-color: #10b981 !important;
+  border-left: 4px solid #10b981 !important;
 }
 .error-card.severity-warning {
-  border-left-color: #f59e0b !important;
-}
-.error-card.severity-error {
-  border-left-color: #ef4444 !important;
+  border-left: 4px solid #f59e0b !important;
 }
 
 /* Table Row Severity Borders */
