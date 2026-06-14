@@ -19,7 +19,7 @@
 
             <!-- Top Navigation links -->
             <nav class="top-nav">
-              <router-link to="/" class="nav-item" active-class="active">
+              <router-link to="/" class="nav-item" active-class="active" title="View Error Logs">
                 <i class="pi pi-list nav-icon"></i>
                 <span class="nav-text">Errors</span>
                 <span v-if="store.totalFiltered > 0" class="badge">
@@ -27,37 +27,37 @@
                 </span>
               </router-link>
 
-              <a :href="`${cleanRoot}/rss`" target="_blank" class="nav-item">
+              <a :href="`${cleanRoot}/rss`" target="_blank" class="nav-item" title="RSS Feeds (Opens in new tab)">
                 <i class="pi pi-rss nav-icon" style="color: #f97316;"></i>
                 <span class="nav-text">RSS Feeds</span>
               </a>
 
-              <a :href="`${cleanRoot}/digestrss`" target="_blank" class="nav-item">
+              <a :href="`${cleanRoot}/digestrss`" target="_blank" class="nav-item" title="RSS Digest (Opens in new tab)">
                 <i class="pi pi-envelope nav-icon" style="color: #ef4444;"></i>
                 <span class="nav-text">RSS Digest</span>
               </a>
 
-              <a :href="`${cleanRoot}/download`" target="_blank" class="nav-item">
+              <a :href="`${cleanRoot}/download`" target="_blank" class="nav-item" title="Download log as CSV">
                 <i class="pi pi-download nav-icon" style="color: #22c55e;"></i>
                 <span class="nav-text">Download Log</span>
               </a>
 
-              <router-link to="/stats" class="nav-item" active-class="active">
+              <router-link to="/stats" class="nav-item" active-class="active" title="View Dashboard Statistics">
                 <i class="pi pi-chart-bar nav-icon"></i>
                 <span class="nav-text">Statistics</span>
               </router-link>
 
-              <router-link to="/settings" class="nav-item" active-class="active">
+              <router-link to="/settings" class="nav-item" active-class="active" title="Configure Dashboard Settings">
                 <i class="pi pi-cog nav-icon"></i>
                 <span class="nav-text">Settings</span>
               </router-link>
 
-              <a href="https://github.com/meoptimus/ElmahCoreX" target="_blank" class="nav-item">
+              <a href="https://github.com/meoptimus/ElmahCoreX" target="_blank" class="nav-item" title="Help / Documentation">
                 <i class="pi pi-question-circle nav-icon" style="color: #3b82f6;"></i>
                 <span class="nav-text">Help</span>
               </a>
 
-              <button class="nav-item btn-link-style" @click="showAboutModal = true">
+              <button class="nav-item btn-link-style" @click="showAboutModal = true" title="About ElmahCoreX">
                 <i class="pi pi-info-circle nav-icon" style="color: #6366f1;"></i>
                 <span class="nav-text">About</span>
               </button>
@@ -475,18 +475,31 @@ body {
   opacity: 0;
 }
 
+@media (max-width: 1200px) {
+  /* On medium screens, only show labels for primary route (Errors) and use icons for secondary items */
+  .top-nav .nav-item:not(:first-child) .nav-text {
+    display: none;
+  }
+  .top-nav .nav-item:not(:first-child) {
+    padding: 0.5rem;
+  }
+}
+
 @media (max-width: 768px) {
   .logo-text, .version-tag {
     display: none;
   }
   .header-left {
-    gap: 1rem;
+    gap: 0.5rem;
   }
-  .nav-text {
-    display: none;
+  .top-nav {
+    gap: 0.25rem;
+  }
+  .top-nav .nav-text {
+    display: none !important;
   }
   .nav-item {
-    padding: 0.5rem;
+    padding: 0.5rem !important;
   }
 }
 
