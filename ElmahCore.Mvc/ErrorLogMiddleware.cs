@@ -197,16 +197,34 @@ internal sealed class ErrorLogMiddleware
 
     private static async Task<string> GetBody(HttpRequest request)
     {
-        request.EnableBuffering();
-        var body = request.Body;
-        var buffer = new byte[Convert.ToInt32(request.ContentLength)];
-        // ReSharper disable once MustUseReturnValue
-        await request.Body.ReadExactlyAsync(buffer, 0, buffer.Length);
-        var bodyAsText = Encoding.UTF8.GetString(buffer);
-        body.Seek(0, SeekOrigin.Begin);
-        request.Body = body;
+        try
+        {
+            request.EnableBuffering();
+            var body = request.Body;
+            if (body == null) return string.Empty;
 
-        return bodyAsText;
+            if (body.CanSeek)
+            {
+                body.Seek(0, SeekOrigin.Begin);
+            }
+
+            string bodyAsText;
+            using (var reader = new StreamReader(body, Encoding.UTF8, detectEncodingFromByteOrderMarks: true, bufferSize: 1024, leaveOpen: true))
+            {
+                bodyAsText = await reader.ReadToEndAsync();
+            }
+
+            if (body.CanSeek)
+            {
+                body.Seek(0, SeekOrigin.Begin);
+            }
+
+            return bodyAsText;
+        }
+        catch
+        {
+            return string.Empty;
+        }
     }
 
     private async Task ProcessElmahRequest(HttpContext context, string resource)

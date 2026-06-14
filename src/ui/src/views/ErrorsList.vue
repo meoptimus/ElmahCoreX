@@ -130,15 +130,18 @@
           </div>
 
           <!-- Cards List (Side-bar mode when details pane is open) -->
-          <div v-else-if="selectedErrorId" class="error-cards-list" ref="cardsListRef">
+          <div v-else-if="selectedErrorId" class="error-cards-list" ref="cardsListRef" @scroll="handleScroll">
             <div 
               v-for="entry in store.errors" 
               :key="entry.id" 
               class="error-card"
-              :class="{ 
-                'active-card': entry.id === selectedErrorId, 
-                'reviewed-card': entry.error.isReviewed 
-              }"
+              :class="[
+                { 
+                  'active-card': entry.id === selectedErrorId, 
+                  'reviewed-card': entry.error.isReviewed 
+                },
+                'severity-' + (entry.error.severity || 'Error').toLowerCase()
+              ]"
               @click="viewDetails(entry.id)"
             >
               <div class="card-header">
@@ -150,7 +153,7 @@
                     @click.stop
                   />
                   <!-- Subtle status indicator code (no severity badge focus) -->
-                  <span class="status-code-subtle" :class="getSeverityClass(entry.error.statusCode)">
+                  <span class="status-code-subtle" :class="getSeverityClass(entry.error.statusCode, entry.error.severity)">
                     {{ entry.error.statusCode || 'N/A' }}
                   </span>
                   <span class="error-type-title">{{ getShortTypeName(entry.error.type) }}</span>
@@ -186,7 +189,7 @@
           </div>
 
           <!-- Table View (Standard full view when no details open) -->
-          <div v-else class="table-responsive" ref="tableContainerRef">
+          <div v-else class="table-responsive" ref="tableContainerRef" @scroll="handleScroll">
             <table class="errors-table">
               <thead>
                 <tr>
@@ -211,11 +214,12 @@
                 <tr 
                   v-for="entry in store.errors" 
                   :key="entry.id" 
-                  :class="{ 
-                    'reviewed-row': entry.error.isReviewed, 
-                    'selected-row': store.selectedIds.includes(entry.id),
-                    'active-row': entry.id === selectedErrorId
-                  }"
+                  :class="[
+                    entry.error.isReviewed ? 'reviewed-row' : '',
+                    store.selectedIds.includes(entry.id) ? 'selected-row' : '',
+                    entry.id === selectedErrorId ? 'active-row' : '',
+                    'severity-' + (entry.error.severity || 'Error').toLowerCase()
+                  ]"
                 >
                   <td>
                     <input 
@@ -225,8 +229,8 @@
                     />
                   </td>
                   <td>
-                    <span class="severity-badge" :class="getSeverityClass(entry.error.statusCode)">
-                      {{ getSeverityText(entry.error.statusCode) }}
+                    <span class="severity-badge" :class="getSeverityClass(entry.error.statusCode, entry.error.severity)">
+                      {{ getSeverityText(entry.error.statusCode, entry.error.severity) }}
                     </span>
                   </td>
                   <td class="font-mono text-center font-bold">
@@ -266,53 +270,16 @@
             </table>
           </div>
 
-          <!-- Traditional Sidebar Pager (Sidebar view) -->
-          <div v-if="selectedErrorId && store.errors.length > 0" class="sidebar-pager">
-            <div class="pager-left">
-              {{ startRange }} - {{ endRange }} of {{ store.totalCount }}
+          <!-- Infinite Scroll Pager Status Footer -->
+          <div v-if="store.errors.length > 0" class="infinite-scroll-footer">
+            <div class="scroll-status-left">
+              Loaded {{ store.errors.length }} of {{ store.totalCount }} errors
             </div>
-            <div class="pager-right">
-              <button class="icon-btn" :disabled="isFirstPage" @click="prevPage" title="Previous Page">
-                <i class="pi pi-chevron-left"></i>
-              </button>
-              <span class="page-indicator font-mono">
-                {{ currentPage }} / {{ totalPages }}
-              </span>
-              <button class="icon-btn" :disabled="isLastPage" @click="nextPage" title="Next Page">
-                <i class="pi pi-chevron-right"></i>
-              </button>
+            <div v-if="store.loading || loadingMore" class="scroll-status-right">
+              <i class="pi pi-spin pi-spinner mr-2"></i> Loading more...
             </div>
-          </div>
-
-          <!-- Traditional Table Pagination (Full view) -->
-          <div v-else-if="store.errors.length > 0" class="table-footer">
-            <div class="footer-left">
-              Showing {{ startRange }} - {{ endRange }} of {{ store.totalCount }} errors
-            </div>
-            <div class="footer-right">
-              <!-- Page size selector -->
-              <div class="page-size">
-                Rows per page:
-                <select :value="store.pageSize" @change="changePageSize">
-                  <option :value="10">10</option>
-                  <option :value="25">25</option>
-                  <option :value="50">50</option>
-                  <option :value="100">100</option>
-                </select>
-              </div>
-
-              <!-- Page navigation buttons -->
-              <div class="pagination-nav">
-                <button class="icon-btn" :disabled="isFirstPage" @click="prevPage">
-                  <i class="pi pi-chevron-left"></i>
-                </button>
-                <span class="page-indicator">
-                  Page {{ currentPage }} of {{ totalPages }}
-                </span>
-                <button class="icon-btn" :disabled="isLastPage" @click="nextPage">
-                  <i class="pi pi-chevron-right"></i>
-                </button>
-              </div>
+            <div v-else-if="store.errors.length >= store.totalCount" class="scroll-status-right text-muted">
+              All errors loaded.
             </div>
           </div>
         </div>
@@ -445,26 +412,23 @@ const resetFilters = () => {
   store.clearFilters();
 };
 
-const changePageSize = (e) => {
-  store.pageSize = parseInt(e.target.value, 10);
-  store.pageIndex = 0;
-  store.fetchErrors();
-};
+const loadingMore = ref(false);
 
-const prevPage = () => {
-  if (!isFirstPage.value) {
-    store.pageIndex = Math.max(0, store.pageIndex - store.pageSize);
-    store.fetchErrors();
-    scrollToTop();
+const handleScroll = (e) => {
+  const container = e.target;
+  if (container.scrollHeight - container.scrollTop <= container.clientHeight + 50) {
+    loadMore();
   }
 };
 
-const nextPage = () => {
-  if (!isLastPage.value) {
-    store.pageIndex = store.pageIndex + store.pageSize;
-    store.fetchErrors();
-    scrollToTop();
-  }
+const loadMore = async () => {
+  if (loadingMore.value || store.loading) return;
+  if (store.errors.length >= store.totalCount) return;
+
+  loadingMore.value = true;
+  store.pageIndex = store.errors.length;
+  await store.fetchErrors(true);
+  loadingMore.value = false;
 };
 
 // Formatting helpers
@@ -487,7 +451,10 @@ const getShortTypeName = (type) => {
   return parts[parts.length - 1];
 };
 
-const getSeverityClass = (statusCode) => {
+const getSeverityClass = (statusCode, severity) => {
+  const sev = (severity || '').toLowerCase();
+  if (sev === 'info' || sev === 'success' || sev === 'warning' || sev === 'error') return sev;
+
   if (!statusCode) return 'error';
   if (statusCode < 200) return 'info';
   if (statusCode < 400) return 'success';
@@ -495,7 +462,8 @@ const getSeverityClass = (statusCode) => {
   return 'error';
 };
 
-const getSeverityText = (statusCode) => {
+const getSeverityText = (statusCode, severity) => {
+  if (severity) return severity.toUpperCase();
   if (!statusCode) return 'ERROR';
   if (statusCode < 200) return 'INFO';
   if (statusCode < 400) return 'SUCCESS';
@@ -542,9 +510,16 @@ const confirmDeleteAll = async () => {
   }
 };
 
+const loadInitial = async () => {
+  await store.fetchErrors();
+  await store.fetchCounts();
+  if (!selectedErrorId.value && store.errors.length > 0) {
+    viewDetails(store.errors[0].id);
+  }
+};
+
 onMounted(() => {
-  store.fetchErrors();
-  store.fetchCounts();
+  loadInitial();
 });
 </script>
 
@@ -1322,5 +1297,55 @@ html.dark-mode .status-code-subtle.info {
     border-left: none;
     padding-left: 0;
   }
+}
+
+/* Infinite Scroll Footer Styling */
+.infinite-scroll-footer {
+  padding: 0.75rem 1.25rem;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  border-top: 1px solid var(--border-color);
+  font-size: 0.85rem;
+  color: var(--text-light);
+  background-color: var(--panel-bg);
+  z-index: 10;
+}
+
+.scroll-status-right {
+  display: flex;
+  align-items: center;
+  font-weight: 600;
+}
+
+/* Card Severity Borders */
+.error-card {
+  border-left: 4px solid var(--border-color);
+}
+.error-card.severity-info {
+  border-left-color: #3b82f6 !important;
+}
+.error-card.severity-success {
+  border-left-color: #10b981 !important;
+}
+.error-card.severity-warning {
+  border-left-color: #f59e0b !important;
+}
+.error-card.severity-error {
+  border-left-color: #ef4444 !important;
+}
+
+/* Table Row Severity Borders */
+.errors-table tr.severity-info td:first-child {
+  border-left: 4px solid #3b82f6;
+}
+.errors-table tr.severity-success td:first-child {
+  border-left: 4px solid #10b981;
+}
+.errors-table tr.severity-warning td:first-child {
+  border-left: 4px solid #f59e0b;
+}
+.errors-table tr.severity-error td:first-child {
+  border-left: 4px solid #ef4444;
 }
 </style>
