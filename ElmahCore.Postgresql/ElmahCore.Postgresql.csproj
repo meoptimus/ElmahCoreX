@@ -1,10 +1,10 @@
 <Project Sdk="Microsoft.NET.Sdk">
 
     <PropertyGroup>
-        <Version>2.1.5</Version>
+        <Version>2.2.2</Version>
         <PackageProjectUrl>https://github.com/ElmahCoreEx/ElmahCoreEx</PackageProjectUrl>
-        <AssemblyVersion>2.1.5.0</AssemblyVersion>
-        <FileVersion>2.1.5.0</FileVersion>
+        <AssemblyVersion>2.2.2.0</AssemblyVersion>
+        <FileVersion>2.2.2.0</FileVersion>
         <AssemblyName>ElmahCore.Postgresql</AssemblyName>
         <PackageId>ElmahCoreX.Postgresql</PackageId>
         <Authors>ElmahCoreEx</Authors>
