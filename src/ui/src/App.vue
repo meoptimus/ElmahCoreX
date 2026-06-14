@@ -114,7 +114,7 @@
           <div class="about-header">
             <i class="pi pi-shield about-logo-icon"></i>
             <h2>ElmahCoreX</h2>
-            <span class="about-version">v2.2.4</span>
+            <span class="about-version">v2.2.5</span>
           </div>
           <div class="about-body">
             <p>A modernized, high-performance error logging and management dashboard for ASP.NET Core applications.</p>
