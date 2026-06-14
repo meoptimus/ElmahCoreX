@@ -22,11 +22,25 @@ public class IndexModel : PageModel
 
         try
         {
-            throw new ArgumentNullException("connectionString", "The database connection string is empty or invalid. Please check your appsettings.json configuration file and ensure that the database service is running and accessible from the hosting environment.");
+            try
+            {
+                try
+                {
+                    throw new System.IO.FileNotFoundException("Could not load file or assembly 'Newtonsoft.Json, Version=13.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed' or one of its dependencies. The system cannot find the file specified. Ensure that the assembly is deployed correctly and present in the bin folder or Global Assembly Cache.", "Newtonsoft.Json.dll");
+                }
+                catch (Exception ex1)
+                {
+                    throw new TypeInitializationException("Newtonsoft.Json.JsonConvert", ex1);
+                }
+            }
+            catch (Exception ex2)
+            {
+                throw new InvalidOperationException("An error occurred while parsing the configuration profile. The JSON serialization settings could not be loaded due to a missing assembly version reference.", ex2);
+            }
         }
-        catch (Exception ex)
+        catch (Exception ex3)
         {
-            throw new InvalidOperationException("Failed to initialize the database repository layer because the configuration provider returned invalid parameters for the current development environment. See inner exception for details.", ex);
+            throw new AggregateException("One or more critical errors occurred during the application initialization pipeline. Please inspect the nested inner exceptions to troubleshoot the boot failure.", ex3);
         }
     }
 }
