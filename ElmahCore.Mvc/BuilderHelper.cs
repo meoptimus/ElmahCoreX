@@ -1,7 +1,6 @@
 using System;
 using System.Diagnostics;
 using ElmahCore.Mvc.Logger;
-using JetBrains.Annotations;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.DependencyInjection;
@@ -12,14 +11,12 @@ namespace ElmahCore.Mvc;
 
 public static class BuilderHelper
 {
-    [UsedImplicitly]
     public static IApplicationBuilder UseElmahExceptionPage(this IApplicationBuilder app)
     {
         ErrorLogMiddleware.ShowDebugPage = true;
         return app;
     }
 
-    [UsedImplicitly]
     public static IApplicationBuilder UseElmah(this IApplicationBuilder app)
     {
         app.UseStaticHttpContext();
@@ -55,7 +52,6 @@ public static class BuilderHelper
         return services;
     }
 
-    [UsedImplicitly]
     public static IServiceCollection AddElmah(this IServiceCollection services, Action<ElmahOptions> setupAction)
     {
         return AddElmah<MemoryErrorLog>(services, setupAction);

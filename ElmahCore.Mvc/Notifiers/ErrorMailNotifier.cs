@@ -30,7 +30,6 @@ using System.Net;
 using System.Net.Mail;
 using System.Text;
 using System.Threading;
-using JetBrains.Annotations;
 
 namespace ElmahCore.Mvc.Notifiers;
 
@@ -44,7 +43,6 @@ using MailAttachment = Attachment;
 ///     HTTP module that sends an e-mail whenever an unhandled exception
 ///     occurs in an ASP.NET web application.
 /// </summary>
-[UsedImplicitly]
 public class ErrorMailNotifier : IErrorNotifier
 {
     private readonly bool _reportAsynchronously;

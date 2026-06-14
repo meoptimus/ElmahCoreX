@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using Microsoft.Extensions.Options;
 using MySql.Data.MySqlClient;
 
@@ -13,7 +12,6 @@ namespace ElmahCore.MySql;
 ///     An <see cref="ErrorLog" /> implementation that uses MySQL
 ///     as its backing store.
 /// </summary>
-[UsedImplicitly]
 public class MySqlErrorLog : ErrorLog
 {
     private readonly bool _logAllXml;

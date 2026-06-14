@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
-using JetBrains.Annotations;
 using Microsoft.Extensions.Options;
 using Npgsql;
 using NpgsqlTypes;
@@ -14,7 +13,6 @@ namespace ElmahCore.Postgresql;
 ///     An <see cref="ErrorLog" /> implementation that uses PostgreSQL
 ///     as its backing store.
 /// </summary>
-[UsedImplicitly]
 public class PgsqlErrorLog : ErrorLog
 {
     private const int MaxAppNameLength = 60;

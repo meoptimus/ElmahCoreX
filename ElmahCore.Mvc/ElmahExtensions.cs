@@ -3,7 +3,6 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using ElmahCore.Mvc;
 using ElmahCore.Mvc.Exceptions;
-using JetBrains.Annotations;
 using Microsoft.AspNetCore.Http;
 
 // ReSharper disable once CheckNamespace
@@ -92,7 +91,6 @@ public static class ElmahExtensions
             onError, statusCode: statusCode);
     }
 
-    [UsedImplicitly]
     public static void LogParams(this object source,
         (string name, object value) param1 = default,
         (string name, object value) param2 = default,
