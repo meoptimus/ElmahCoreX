@@ -194,11 +194,19 @@ const loadStatsData = async () => {
 const renderCharts = () => {
   if (errors.value.length === 0) return;
 
-  // 1. Error Rate trend over days
+  // 1. Error Rate trend over days (pre-populate last 7 days)
   const dailyCounts = {};
+  for (let i = 6; i >= 0; i--) {
+    const day = dayjs().subtract(i, 'day').format('MM-DD');
+    dailyCounts[day] = 0;
+  }
   errors.value.forEach(e => {
     const day = dayjs(e.error.time).format('MM-DD');
-    dailyCounts[day] = (dailyCounts[day] || 0) + 1;
+    if (dailyCounts[day] !== undefined) {
+      dailyCounts[day]++;
+    } else {
+      dailyCounts[day] = 1;
+    }
   });
   
   // Sort keys chronologically
@@ -372,6 +380,12 @@ onMounted(() => {
 .empty-icon {
   font-size: 3.5rem;
   margin-bottom: 1rem;
+}
+
+.dashboard-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
 }
 
 /* Metrics Row */
