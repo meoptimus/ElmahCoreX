@@ -702,10 +702,11 @@ html.dark-mode .status-code-badge.error {
 }
 
 .error-subtitle {
-  margin: 0;
-  color: var(--text-light);
+  margin: 0 0 0.5rem 0;
+  color: var(--text-color);
   font-size: 0.9rem;
   line-height: 1.4;
+  opacity: 0.9;
 }
 
 .action-right {

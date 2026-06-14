@@ -723,11 +723,12 @@ html.dark-mode .status-code-badge.error {
 }
 
 .error-subtitle {
-  margin: 0;
-  color: var(--text-light);
+  margin: 0 0 0.5rem 0;
+  color: var(--text-color);
   font-size: 0.85rem;
   line-height: 1.4;
   word-break: break-word;
+  opacity: 0.9;
 }
 
 .action-buttons {
