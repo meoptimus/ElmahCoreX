@@ -27,6 +27,21 @@
                 </span>
               </router-link>
 
+              <a :href="`${cleanRoot}/rss`" target="_blank" class="nav-item">
+                <i class="pi pi-rss nav-icon" style="color: #f97316;"></i>
+                <span class="nav-text">RSS Feeds</span>
+              </a>
+
+              <a :href="`${cleanRoot}/digestrss`" target="_blank" class="nav-item">
+                <i class="pi pi-envelope nav-icon" style="color: #ef4444;"></i>
+                <span class="nav-text">RSS Digest</span>
+              </a>
+
+              <a :href="`${cleanRoot}/download`" target="_blank" class="nav-item">
+                <i class="pi pi-download nav-icon" style="color: #22c55e;"></i>
+                <span class="nav-text">Download Log</span>
+              </a>
+
               <router-link to="/stats" class="nav-item" active-class="active">
                 <i class="pi pi-chart-bar nav-icon"></i>
                 <span class="nav-text">Statistics</span>
@@ -36,6 +51,16 @@
                 <i class="pi pi-cog nav-icon"></i>
                 <span class="nav-text">Settings</span>
               </router-link>
+
+              <a href="https://github.com/meoptimus/ElmahCoreX" target="_blank" class="nav-item">
+                <i class="pi pi-question-circle nav-icon" style="color: #3b82f6;"></i>
+                <span class="nav-text">Help</span>
+              </a>
+
+              <button class="nav-item btn-link-style" @click="showAboutModal = true">
+                <i class="pi pi-info-circle nav-icon" style="color: #6366f1;"></i>
+                <span class="nav-text">About</span>
+              </button>
             </nav>
           </div>
           <div class="header-right">
@@ -80,6 +105,40 @@
       </div>
     </div>
     <Toast />
+
+    <!-- About Modal Dialog -->
+    <Transition name="fade">
+      <div v-if="showAboutModal" class="about-modal-overlay" @click.self="showAboutModal = false">
+        <div class="about-modal-card">
+          <button class="about-close-btn" @click="showAboutModal = false">&times;</button>
+          <div class="about-header">
+            <i class="pi pi-shield about-logo-icon"></i>
+            <h2>ElmahCoreX</h2>
+            <span class="about-version">v2.2.3</span>
+          </div>
+          <div class="about-body">
+            <p>A modernized, high-performance error logging and management dashboard for ASP.NET Core applications.</p>
+            <div class="about-info-grid">
+              <div class="info-row">
+                <span class="label">Repository:</span>
+                <span class="val"><a href="https://github.com/meoptimus/ElmahCoreX" target="_blank">meoptimus/ElmahCoreX</a></span>
+              </div>
+              <div class="info-row">
+                <span class="label">Framework:</span>
+                <span class="val">Vue 3 + Vite / .NET 8 / .NET 9</span>
+              </div>
+              <div class="info-row">
+                <span class="label">Features:</span>
+                <span class="val">Real-time polling, analytics, full-text filters, reviewed flag, bulk operations</span>
+              </div>
+            </div>
+          </div>
+          <div class="about-footer">
+            <button class="btn-primary" @click="showAboutModal = false">Close</button>
+          </div>
+        </div>
+      </div>
+    </Transition>
   </div>
 </template>
 
@@ -91,6 +150,10 @@ import Toast from 'primevue/toast';
 
 const store = useErrorStore();
 const route = useRoute();
+
+const elmahRoot = window.$elmah_root || '/elmah';
+const cleanRoot = '/' + elmahRoot.replace(/^\/|\/$/g, '');
+const showAboutModal = ref(false);
 
 const isDarkMode = ref(localStorage.getItem('theme') === 'dark');
 
@@ -425,5 +488,152 @@ body {
   .nav-item {
     padding: 0.5rem;
   }
+}
+
+/* About Modal Styles */
+.about-modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  background-color: rgba(15, 23, 42, 0.65);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 2000;
+}
+
+.about-modal-card {
+  background-color: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 16px;
+  width: 90%;
+  max-width: 480px;
+  padding: 2.5rem 2rem 2rem 2rem;
+  box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.2), 0 10px 10px -5px rgba(0, 0, 0, 0.1);
+  position: relative;
+  text-align: center;
+  color: var(--text-color);
+  transition: transform 0.3s ease;
+}
+
+.about-close-btn {
+  position: absolute;
+  top: 1rem;
+  right: 1.25rem;
+  background: none;
+  border: none;
+  font-size: 1.75rem;
+  color: var(--text-light);
+  cursor: pointer;
+  line-height: 1;
+}
+
+.about-close-btn:hover {
+  color: var(--text-color);
+}
+
+.about-logo-icon {
+  font-size: 3.5rem;
+  color: var(--primary-color);
+  margin-bottom: 1rem;
+}
+
+.about-header h2 {
+  margin: 0.5rem 0 0.25rem 0;
+  font-size: 1.75rem;
+  font-weight: 800;
+}
+
+.about-version {
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: var(--text-light);
+  background-color: var(--bg-color);
+  padding: 0.2rem 0.6rem;
+  border-radius: 9999px;
+  border: 1px solid var(--border-color);
+}
+
+.about-body {
+  margin-top: 1.5rem;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+.about-body p {
+  color: var(--text-light);
+  margin-bottom: 1.5rem;
+}
+
+.about-info-grid {
+  background-color: var(--bg-color);
+  border-radius: 12px;
+  border: 1px solid var(--border-color);
+  padding: 1rem;
+  text-align: left;
+}
+
+.info-row {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  font-size: 0.85rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.info-row:last-child {
+  border-bottom: none;
+}
+
+.info-row .label {
+  font-weight: 600;
+  color: var(--text-light);
+}
+
+.info-row .val {
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+.info-row .val a {
+  color: var(--primary-color);
+  text-decoration: none;
+}
+
+.info-row .val a:hover {
+  text-decoration: underline;
+}
+
+.about-footer {
+  margin-top: 2rem;
+  display: flex;
+  justify-content: center;
+}
+
+.btn-primary {
+  background-color: var(--primary-color);
+  color: white;
+  border: none;
+  padding: 0.6rem 2rem;
+  border-radius: 8px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background-color 0.2s;
+}
+
+.btn-primary:hover {
+  background-color: var(--primary-hover);
+}
+
+.btn-link-style {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  text-align: left;
+  outline: none;
 }
 </style>

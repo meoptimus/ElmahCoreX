@@ -835,13 +835,50 @@ html.dark-mode .status-code-badge.error {
 :deep(.stacktrace-html) {
   font-family: SFMono-Regular, Consolas, Monaco, monospace;
   font-size: 0.8rem;
-  line-height: 1.5;
+  line-height: 1.6;
   white-space: pre-wrap;
 }
 
 :deep(.stacktrace-html a) {
   color: #38bdf8;
   text-decoration: underline;
+}
+
+:deep(.st-frame) {
+  display: block;
+  padding: 0.1rem 0;
+}
+
+:deep(.st-type) {
+  color: #c084fc; /* soft violet-purple for types/namespaces */
+}
+
+:deep(.st-method) {
+  color: #38bdf8; /* vibrant sky blue for method name */
+  font-weight: 600;
+}
+
+:deep(.params) {
+  color: #94a3b8; /* slate gray for parameter parens */
+}
+
+:deep(.st-param-type) {
+  color: #a78bfa; /* lavender for parameter types */
+}
+
+:deep(.st-param-name) {
+  color: #f472b6; /* warm pink for parameter names */
+  font-style: italic;
+}
+
+:deep(.st-file) {
+  color: #34d399; /* emerald green for source files */
+  margin-left: 0.5rem;
+}
+
+:deep(.st-line) {
+  color: #fb923c; /* safety orange for line numbers */
+  font-weight: bold;
 }
 
 /* Source Context Code */
