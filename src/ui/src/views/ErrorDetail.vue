@@ -70,6 +70,61 @@
       </div>
     </div>
 
+    <!-- Metadata Summary Card -->
+    <div class="card metadata-summary-card mb-4" v-if="error">
+      <div class="metadata-grid">
+        <div class="metadata-main">
+          <div class="metadata-row">
+            <div class="metadata-item">
+              <span class="meta-label">When</span>
+              <span class="meta-value font-mono">{{ formatTime(error.time) }}</span>
+            </div>
+            <div class="metadata-item" v-if="error.client">
+              <span class="meta-label">Client IP</span>
+              <span class="meta-value font-mono select-all">{{ error.client }}</span>
+            </div>
+            <div class="metadata-item" v-if="error.user">
+              <span class="meta-label">User</span>
+              <span class="meta-value select-all">{{ error.user }}</span>
+            </div>
+            <div class="metadata-item" v-if="error.hostName">
+              <span class="meta-label">Host</span>
+              <span class="meta-value font-mono">{{ error.hostName }}</span>
+            </div>
+          </div>
+          <div class="metadata-row">
+            <div class="metadata-item text-break" v-if="error.url">
+              <span class="meta-label">URL</span>
+              <span class="meta-value font-mono select-all">
+                <span class="method-badge" :class="getSeverityClass(error.statusCode)">{{ error.method }}</span>
+                {{ error.url }}
+              </span>
+            </div>
+          </div>
+          <div class="metadata-row">
+            <div class="metadata-item" v-if="error.applicationName">
+              <span class="meta-label">Application</span>
+              <span class="meta-value">{{ error.applicationName }}</span>
+            </div>
+            <div class="metadata-item" v-if="error.source">
+              <span class="meta-label">Source</span>
+              <span class="meta-value font-mono text-break">{{ error.source }}</span>
+            </div>
+          </div>
+        </div>
+        <div class="metadata-sidebar" v-if="error.os || error.browser">
+          <div class="client-icon-card" v-if="error.os">
+            <i class="pi" :class="[getOsIcon(error.os), 'os-icon-' + error.os.toLowerCase()]"></i>
+            <span class="client-label">{{ error.os }}</span>
+          </div>
+          <div class="client-icon-card" v-if="error.browser">
+            <i class="pi" :class="[getBrowserIcon(error.browser), 'browser-icon-' + error.browser.toLowerCase()]"></i>
+            <span class="client-label">{{ error.browser }}</span>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <!-- Detail Tabs -->
     <div class="card detail-card" v-if="error">
       <!-- Tabs Navigation -->
@@ -98,33 +153,6 @@
             <div class="info-item">
               <span class="info-label">Error Message</span>
               <span class="info-value text-danger font-bold">{{ error.message }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Logged Time</span>
-              <span class="info-value font-mono">{{ formatTime(error.time) }}</span>
-            </div>
-            <div class="info-item">
-              <span class="info-label">Machine Name / Host</span>
-              <span class="info-value font-mono">{{ error.hostName }}</span>
-            </div>
-            <div class="info-item" v-if="error.user">
-              <span class="info-label">Logged User</span>
-              <span class="info-value">{{ error.user }}</span>
-            </div>
-            <div class="info-item" v-if="error.url">
-              <span class="info-label">Request URL</span>
-              <span class="info-value font-mono text-primary select-all">
-                <span class="method-tag">{{ error.method }}</span>
-                {{ error.url }}
-              </span>
-            </div>
-            <div class="info-item" v-if="error.client">
-              <span class="info-label">Client IP Address</span>
-              <span class="info-value font-mono">{{ error.client }}</span>
-            </div>
-            <div class="info-item" v-if="error.source">
-              <span class="info-label">Assembly Source</span>
-              <span class="info-value font-mono">{{ error.source }}</span>
             </div>
           </div>
         </div>
@@ -480,6 +508,29 @@ const getSeverityClass = (statusCode) => {
   if (statusCode < 400) return 'success';
   if (statusCode < 500) return 'warning';
   return 'error';
+};
+
+const getOsIcon = (os) => {
+  if (!os) return 'pi-desktop';
+  const osLower = os.toLowerCase();
+  if (osLower.includes('windows')) return 'pi-microsoft';
+  if (osLower.includes('iphone') || osLower.includes('ipad') || osLower.includes('macintosh') || osLower.includes('apple')) return 'pi-apple';
+  if (osLower.includes('android')) return 'pi-android';
+  if (osLower.includes('linux')) return 'pi-server';
+  return 'pi-desktop';
+};
+
+const getBrowserIcon = (browser) => {
+  if (!browser) return 'pi-globe';
+  const bLower = browser.toLowerCase();
+  if (bLower.includes('chrome')) return 'pi-globe';
+  if (bLower.includes('firefox')) return 'pi-globe';
+  if (bLower.includes('safari') || bLower.includes('webkit')) return 'pi-compass';
+  if (bLower.includes('edge')) return 'pi-microsoft';
+  if (bLower.includes('opera')) return 'pi-globe';
+  if (bLower.includes('msie')) return 'pi-microsoft';
+  if (bLower.includes('bot')) return 'pi-android';
+  return 'pi-globe';
 };
 
 const formatBody = (body) => {
@@ -1017,5 +1068,158 @@ html.dark-mode .status-code-badge.error {
   border-radius: 4px;
   font-size: 0.75rem;
   font-weight: 700;
+}
+
+/* Metadata Summary Box styling */
+.metadata-summary-card {
+  background-color: #f0f9ff;
+  border: 1px solid #bae6fd;
+  padding: 1.25rem;
+  border-radius: 12px;
+}
+
+html.dark-mode .metadata-summary-card {
+  background-color: #0c4a6e;
+  border-color: #0284c7;
+}
+
+.metadata-grid {
+  display: flex;
+  justify-content: space-between;
+  gap: 1.5rem;
+}
+
+.metadata-main {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.metadata-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+}
+
+.metadata-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.2rem;
+  min-width: 150px;
+}
+
+.meta-label {
+  font-size: 0.75rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #0369a1;
+}
+
+html.dark-mode .meta-label {
+  color: #38bdf8;
+}
+
+.meta-value {
+  font-size: 0.9rem;
+  color: var(--text-color);
+  word-break: break-all;
+}
+
+.method-badge {
+  background-color: var(--primary-color);
+  color: white;
+  padding: 0.1rem 0.4rem;
+  border-radius: 4px;
+  font-size: 0.75rem;
+  font-weight: 700;
+  margin-right: 0.5rem;
+  text-transform: uppercase;
+}
+
+.method-badge.error {
+  background-color: var(--error-color);
+}
+.method-badge.warning {
+  background-color: var(--warning-color);
+}
+.method-badge.success {
+  background-color: var(--success-color);
+}
+
+.metadata-sidebar {
+  display: flex;
+  gap: 1rem;
+  align-items: center;
+  border-left: 1px solid #bae6fd;
+  padding-left: 1.5rem;
+}
+
+html.dark-mode .metadata-sidebar {
+  border-left-color: #0284c7;
+}
+
+.client-icon-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background-color: rgba(255, 255, 255, 0.4);
+  border: 1px solid rgba(2, 132, 199, 0.15);
+  border-radius: 8px;
+  padding: 0.75rem;
+  min-width: 80px;
+  text-align: center;
+}
+
+html.dark-mode .client-icon-card {
+  background-color: rgba(0, 0, 0, 0.2);
+  border-color: rgba(2, 132, 199, 0.3);
+}
+
+.client-icon-card i {
+  font-size: 2rem;
+  margin-bottom: 0.35rem;
+}
+
+.client-label {
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--text-color);
+}
+
+/* Icon Colors */
+.pi.os-icon-windows {
+  color: #0078d4;
+}
+.pi.os-icon-macintosh, .pi.os-icon-iphone, .pi.os-icon-ipad {
+  color: #555555;
+}
+html.dark-mode .pi.os-icon-macintosh, html.dark-mode .pi.os-icon-iphone, html.dark-mode .pi.os-icon-ipad {
+  color: #f1f5f9;
+}
+.pi.os-icon-android {
+  color: #3ddc84;
+}
+.pi.os-icon-linux {
+  color: #e95420;
+}
+.pi.browser-icon-chrome {
+  color: #4285f4;
+}
+.pi.browser-icon-firefox {
+  color: #ff7139;
+}
+.pi.browser-icon-safari, .pi.browser-icon-androidbrowser {
+  color: #0070c9;
+}
+.pi.browser-icon-edge {
+  color: #0078d4;
+}
+.pi.browser-icon-opera {
+  color: #cc0f35;
+}
+.pi.browser-icon-bot {
+  color: #64748b;
 }
 </style>

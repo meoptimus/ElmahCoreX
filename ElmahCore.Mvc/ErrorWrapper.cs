@@ -143,7 +143,23 @@ public class ErrorWrapper
 
     [XmlElement("Url")] public string Url => _error.ServerVariables["PathBase"] + _error.ServerVariables["Path"];
 
-    [XmlElement("Client")] public string Client => _error.ServerVariables["Connection_RemoteIpAddress"];
+    [XmlElement("Client")]
+    public string Client
+    {
+        get
+        {
+            var cfIp = _error.ServerVariables["Header_CF-Connecting-IP"] 
+                       ?? _error.ServerVariables["Header_True-Client-IP"] 
+                       ?? _error.ServerVariables["Header_X-Forwarded-For"];
+            
+            if (!string.IsNullOrEmpty(cfIp))
+            {
+                return cfIp.Split(',')[0].Trim();
+            }
+            
+            return _error.ServerVariables["Connection_RemoteIpAddress"];
+        }
+    }
 
     public string Version => _error.ServerVariables["Version"];
 
