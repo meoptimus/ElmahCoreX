@@ -167,7 +167,7 @@
           <!-- Syntax Highlighted Stack Trace Frame -->
           <div class="stacktrace-container">
             <div v-if="error.htmlMessage" class="stacktrace-html" v-html="formatHtmlMessage(error.htmlMessage)"></div>
-            <pre v-else class="stacktrace-raw">{{ error.detail }}</pre>
+            <div v-else class="stacktrace-html" v-html="formatRawStackTrace(error.detail)"></div>
           </div>
 
           <!-- Source Code Preview (if available) -->
@@ -557,6 +557,80 @@ const formatHtmlMessage = (html) => {
   return html.replace(/# caller: @([^\r\n]+)/g, (match, path) => {
     return `<span class="st-caller-line"># caller: <span class="st-caller-path">@${path}</span></span>`;
   });
+};
+
+const formatRawStackTrace = (text) => {
+  if (!text) return '';
+  // Escape HTML entities to prevent XSS
+  let escaped = text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+  const lines = escaped.split('\n');
+  const formattedLines = lines.map(line => {
+    // 1. Check for stack trace frame: starts with spaces followed by "at " or "   at "
+    const atMatch = line.match(/^(\s*at\s+)([A-Za-z0-9_.\+<>`\[\]]+)\(([^)]*)\)(?:\s+in\s+(.*?):line\s+(\d+))?/);
+    if (atMatch) {
+      const prefix = atMatch[1]; // "   at "
+      const fullMethod = atMatch[2]; // e.g. "Namespace.Class.Method"
+      const paramsText = atMatch[3]; // e.g. "String name, Int32 age"
+      const filePath = atMatch[4]; // e.g. "C:\path\to\file.cs"
+      const lineNum = atMatch[5]; // e.g. "123"
+
+      const methodParts = fullMethod.split('.');
+      const method = methodParts.pop();
+      const typePath = methodParts.join('.');
+
+      let methodHtml = '';
+      if (typePath) {
+        methodHtml = `<span class="st-type">${typePath}</span>.<span class="st-method">${method}</span>`;
+      } else {
+        methodHtml = `<span class="st-method">${method}</span>`;
+      }
+
+      let paramsHtml = '';
+      if (paramsText.trim()) {
+        const params = paramsText.split(',');
+        paramsHtml = params.map(p => {
+          const parts = p.trim().split(/\s+/);
+          if (parts.length >= 2) {
+            const name = parts.pop();
+            const type = parts.join(' ');
+            return `<span class="st-param-type">${type}</span> <span class="st-param-name">${name}</span>`;
+          }
+          return `<span class="st-param-type">${p}</span>`;
+        }).join(', ');
+      }
+
+      let lineHtml = `${prefix}${methodHtml}<span class="params">(</span>${paramsHtml}<span class="params">)</span>`;
+      if (filePath) {
+        lineHtml += ` <span class="text-muted">in</span> <span class="st-file">${filePath}</span><span class="st-line">:line ${lineNum}</span>`;
+      }
+      return `<span class="st-frame">${lineHtml}</span>`;
+    }
+
+    // 2. Check for inner exception indicator: "---> ExceptionType: message"
+    const innerMatch = line.match(/^(\s*--->\s+)?([A-Za-z0-9_.]*Exception):\s*(.*)/);
+    if (innerMatch) {
+      const arrow = innerMatch[1] || '';
+      const excType = innerMatch[2];
+      const msg = innerMatch[3];
+      return `<span class="st-exception-line">${arrow}<span class="st-exception-type">${excType}</span>: <span class="st-exception-msg">${msg}</span></span>`;
+    }
+
+    // 3. Regular exception start line (e.g. "System.AggregateException: One or more...")
+    const startMatch = line.match(/^([A-Za-z0-9_.]*Exception):\s*(.*)/);
+    if (startMatch) {
+      const excType = startMatch[1];
+      const msg = startMatch[2];
+      return `<span class="st-exception-line"><span class="st-exception-type">${excType}</span>: <span class="st-exception-msg font-bold">${msg}</span></span>`;
+    }
+
+    return line;
+  });
+
+  return formattedLines.join('\n');
 };
 
 // Listen for route ID changes (prev/next navigation)
@@ -956,6 +1030,23 @@ html.dark-mode .status-code-badge.error {
   color: #b91c1c;
   font-weight: 700;
   text-decoration: underline;
+}
+
+:deep(.st-exception-type) {
+  color: #e11d48; /* rose/red for exception types */
+  font-weight: bold;
+}
+
+:deep(.st-exception-msg) {
+  color: #1e293b; /* dark slate for light mode */
+}
+
+html.dark-mode :deep(.st-exception-type) {
+  color: #fb7185; /* lighter rose for dark mode */
+}
+
+html.dark-mode :deep(.st-exception-msg) {
+  color: #cbd5e1; /* slate gray/light for dark mode */
 }
 
 /* Source Context Code */
