@@ -305,7 +305,7 @@ body {
 }
 
 .main-header {
-  height: 64px;
+  height: 48px;
   background-color: var(--panel-bg);
   border-bottom: 1px solid var(--border-color);
   display: flex;
@@ -452,7 +452,7 @@ body {
 .content-body {
   flex: 1;
   overflow: hidden;
-  padding: 1.5rem;
+  padding: 0.75rem;
   display: flex;
   flex-direction: column;
 }

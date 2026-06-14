@@ -553,7 +553,7 @@ onMounted(() => {
 }
 
 .list-pane.has-detail {
-  flex: 0 0 40%;
+  flex: 0 0 30%;
 }
 
 .details-pane {

@@ -82,7 +82,7 @@
       <div class="metadata-section">
         <div class="metadata-grid">
           <div class="metadata-main">
-            <div class="metadata-row">
+            <div class="metadata-grid-cols">
               <div class="metadata-item">
                 <span class="meta-label">When</span>
                 <span class="meta-value font-mono">{{ formatTime(error.time) }}</span>
@@ -99,17 +99,6 @@
                 <span class="meta-label">Host</span>
                 <span class="meta-value font-mono">{{ error.hostName }}</span>
               </div>
-            </div>
-            <div class="metadata-row">
-              <div class="metadata-item text-break" v-if="error.url">
-                <span class="meta-label">URL</span>
-                <span class="meta-value font-mono select-all">
-                  <span class="method-badge" :class="getSeverityClass(error.statusCode)">{{ error.method }}</span>
-                  {{ error.url }}
-                </span>
-              </div>
-            </div>
-            <div class="metadata-row">
               <div class="metadata-item" v-if="error.applicationName">
                 <span class="meta-label">Application</span>
                 <span class="meta-value">{{ error.applicationName }}</span>
@@ -117,6 +106,13 @@
               <div class="metadata-item" v-if="error.source">
                 <span class="meta-label">Source</span>
                 <span class="meta-value font-mono text-break">{{ error.source }}</span>
+              </div>
+              <div class="metadata-item text-break span-full" v-if="error.url">
+                <span class="meta-label">URL</span>
+                <span class="meta-value font-mono select-all">
+                  <span class="method-badge" :class="getSeverityClass(error.statusCode)">{{ error.method }}</span>
+                  {{ error.url }}
+                </span>
               </div>
             </div>
           </div>
@@ -1157,10 +1153,14 @@ html.dark-mode .metadata-section {
   gap: 0.35rem;
 }
 
-.metadata-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 0.5rem 1.25rem;
+.metadata-grid-cols {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 0.35rem 1rem;
+}
+
+.metadata-item.span-full {
+  grid-column: span 3;
 }
 
 .metadata-item {
