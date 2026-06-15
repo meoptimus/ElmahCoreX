@@ -1,7 +1,7 @@
 <template>
   <div class="errors-list-view">
     <div class="split-container">
-      <!-- Left side: List pane -->
+      <!-- Left side: List pane (fixed 300px) -->
       <div class="list-pane">
         <!-- Search, Select All, and Filter Action Bar -->
         <div class="actions-panel mb-4">
@@ -9,7 +9,7 @@
             <i class="pi pi-search search-icon"></i>
             <input 
               type="text" 
-              placeholder="Search by message or type..." 
+              placeholder="Search..." 
               v-model="searchTerm" 
               @input="onSearchInput"
             />
@@ -20,7 +20,7 @@
 
           <div class="btn-group">
             <button 
-              class="btn btn-secondary" 
+              class="btn btn-neutral btn-sm" 
               :class="{ 'active': showFilters }"
               @click="showFilters = !showFilters"
             >
@@ -30,11 +30,11 @@
             </button>
 
             <button 
-              class="btn btn-danger" 
+              class="btn btn-terracotta btn-sm" 
               @click="confirmDeleteAll"
             >
               <i class="pi pi-trash mr-1"></i>
-              Clear Logs
+              Clear
             </button>
           </div>
         </div>
@@ -45,51 +45,51 @@
             <div class="filters-grid">
               <div class="filter-field">
                 <label>Host</label>
-                <input type="text" v-model="filterHost" @change="updateFilter('host', filterHost)" placeholder="e.g. localhost" />
+                <input type="text" v-model="filterHost" @change="updateFilter('host', filterHost)" placeholder="localhost" />
               </div>
 
               <div class="filter-field">
                 <label>User</label>
-                <input type="text" v-model="filterUser" @change="updateFilter('user', filterUser)" placeholder="Username" />
+                <input type="text" v-model="filterUser" @change="updateFilter('user', filterUser)" placeholder="User" />
               </div>
 
               <div class="filter-field">
-                <label>Exception Type</label>
-                <input type="text" v-model="filterType" @change="updateFilter('type', filterType)" placeholder="e.g. NullReferenceException" />
+                <label>Type</label>
+                <input type="text" v-model="filterType" @change="updateFilter('type', filterType)" placeholder="Exception" />
               </div>
 
               <div class="filter-field">
-                <label>Status Code</label>
-                <input type="number" v-model="filterStatusCode" @change="updateFilter('statusCode', filterStatusCode)" placeholder="e.g. 500" />
+                <label>Status</label>
+                <input type="number" v-model="filterStatusCode" @change="updateFilter('statusCode', filterStatusCode)" placeholder="500" />
               </div>
 
               <div class="filter-field">
-                <label>Review Status</label>
+                <label>Reviewed</label>
                 <select v-model="filterIsReviewed" @change="updateFilter('isReviewed', filterIsReviewed)">
-                  <option value="">All Statuses</option>
-                  <option value="false">Unreviewed / Open</option>
+                  <option value="">All</option>
+                  <option value="false">Open</option>
                   <option value="true">Reviewed</option>
                 </select>
               </div>
 
               <div class="filter-field">
-                <label>Application</label>
+                <label>App</label>
                 <input type="text" v-model="filterApplication" @change="updateFilter('application', filterApplication)" placeholder="App Name" />
               </div>
 
               <div class="filter-field">
-                <label>Date From</label>
+                <label>From</label>
                 <input type="date" v-model="filterFrom" @change="updateFilter('from', filterFrom)" />
               </div>
 
               <div class="filter-field">
-                <label>Date To</label>
+                <label>To</label>
                 <input type="date" v-model="filterTo" @change="updateFilter('to', filterTo)" />
               </div>
             </div>
 
             <div class="filters-footer">
-              <button class="btn btn-sm btn-text" @click="resetFilters">Reset Filters</button>
+              <button class="btn btn-sm btn-text" @click="resetFilters">Reset</button>
             </div>
           </div>
         </transition>
@@ -101,13 +101,13 @@
               {{ store.selectedIds.length }} selected
             </span>
             <div class="bulk-actions">
-              <button class="btn btn-sm btn-success mr-2" @click="bulkMarkReviewed(true)">
-                <i class="pi pi-check mr-1"></i> Mark Reviewed
+              <button class="btn btn-sm btn-neutral mr-2" @click="bulkMarkReviewed(true)">
+                <i class="pi pi-check mr-1"></i> Reviewed
               </button>
-              <button class="btn btn-sm btn-secondary mr-2" @click="bulkMarkReviewed(false)">
-                <i class="pi pi-times-circle mr-1"></i> Mark Unreviewed
+              <button class="btn btn-sm btn-neutral mr-2" @click="bulkMarkReviewed(false)">
+                <i class="pi pi-times-circle mr-1"></i> Open
               </button>
-              <button class="btn btn-sm btn-danger" @click="bulkDelete">
+              <button class="btn btn-sm btn-terracotta" @click="bulkDelete">
                 <i class="pi pi-trash mr-1"></i> Delete
               </button>
             </div>
@@ -155,12 +155,12 @@
                 <div class="item-left">
                   <input 
                     type="checkbox" 
-                    :checked="store.selectedIds.includes(entry.id)"
-                    @change="toggleItemSelection(entry.id)"
+                    :value="entry.id"
+                    v-model="store.selectedIds"
                     @click.stop
                     class="item-checkbox"
                   />
-                  <span class="status-badge" :class="getSeverityClass(entry.error.statusCode, entry.error.severity)">
+                  <span class="status-badge" :class="[getSeverityClass(entry.error.statusCode, entry.error.severity), 'status-' + entry.error.statusCode]">
                     {{ entry.error.statusCode || '500' }}
                   </span>
                   <span class="error-type-title">{{ getShortTypeName(entry.error.type) }}</span>
@@ -180,15 +180,8 @@
 
           <!-- Infinite Scroll Pager Status Footer -->
           <div v-if="store.errors.length > 0" class="infinite-scroll-footer">
-            <div class="scroll-status-left">
-              Loaded {{ store.errors.length }} of {{ store.totalCount }}
-            </div>
-            <div v-if="store.loading || loadingMore" class="scroll-status-right">
-              <i class="pi pi-spin pi-spinner mr-2"></i> Loading...
-            </div>
-            <div v-else-if="store.errors.length >= store.totalCount" class="scroll-status-right text-muted">
-              All loaded
-            </div>
+            Loaded {{ store.errors.length }} of {{ store.totalCount }}
+            <span v-if="store.errors.length >= store.totalCount"> — All loaded</span>
           </div>
         </div>
       </div>
@@ -254,15 +247,7 @@ const onDetailDeleted = async (deletedId) => {
   await store.fetchCounts();
 };
 
-const toggleItemSelection = (id) => {
-  if (store.selectedIds.includes(id)) {
-    store.selectedIds = store.selectedIds.filter(x => x !== id);
-  } else {
-    store.selectedIds.push(id);
-  }
-};
 
-// Computed selection helpers
 const isAllSelected = computed(() => {
   if (store.errors.length === 0) return false;
   return store.errors.every(e => store.selectedIds.includes(e.id));
@@ -277,7 +262,7 @@ const toggleSelectAll = () => {
   }
 };
 
-// Search Debounce/Throttle
+
 let searchTimer = null;
 const onSearchInput = () => {
   if (searchTimer) clearTimeout(searchTimer);
@@ -326,7 +311,7 @@ const loadMore = async () => {
   loadingMore.value = false;
 };
 
-// Formatting helpers
+
 const truncate = (str, len) => {
   if (!str) return '';
   return str.length > len ? str.substring(0, len) + '...' : str;
@@ -353,7 +338,22 @@ const getSeverityClass = (statusCode, severity) => {
   return 'error';
 };
 
-// Page Operations
+
+const bulkMarkReviewed = async (isReviewed) => {
+  if (store.selectedIds.length === 0) return;
+  const count = store.selectedIds.length;
+  await store.markSelectedReviewed(isReviewed);
+  toast.add({ severity: 'success', summary: 'Bulk Update', detail: `Marked ${count} errors as ${isReviewed ? 'Reviewed' : 'Open'}.`, life: 3000 });
+};
+
+const bulkDelete = async () => {
+  if (store.selectedIds.length === 0) return;
+  if (confirm(`Are you sure you want to delete ${store.selectedIds.length} selected error(s)?`)) {
+    const count = store.selectedIds.length;
+    await store.deleteSelected();
+    toast.add({ severity: 'success', summary: 'Bulk Delete', detail: `Deleted ${count} errors.`, life: 3000 });
+  }
+};
 const viewDetails = (id) => {
   router.push({ name: 'detail', params: { id } });
 };
@@ -374,7 +374,7 @@ const loadInitial = async () => {
   }
 };
 
-// Watch errors list to auto-select the first error when none is selected
+
 watch(() => store.errors, (newErrors) => {
   if (!selectedErrorId.value && newErrors.length > 0) {
     viewDetails(newErrors[0].id);
@@ -405,24 +405,23 @@ onMounted(() => {
 }
 
 .list-pane {
-  flex: 0 0 30%;
-  width: 30%;
+  flex: 0 0 300px;
+  width: 300px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   height: 100%;
-  background-color: var(--bg-color);
-  border-right: 1px solid var(--border-color);
+  background-color: #f7f6f2; /* Warm parchment */
+  border-right: 1px solid #e2e0da;
 }
 
 .details-pane {
-  flex: 0 0 70%;
-  width: 70%;
+  flex: 1;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   height: 100%;
-  background-color: var(--panel-bg);
+  background-color: #ffffff; /* pure white */
 }
 
 /* Actions Panel */
@@ -430,9 +429,9 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 0.5rem;
-  padding: 0.75rem 1rem 0.5rem 1rem;
-  border-bottom: 1px solid var(--border-color);
+  gap: 0.35rem;
+  padding: 10px 12px;
+  border-bottom: 1px solid #e8e6e0;
 }
 
 .search-box {
@@ -443,38 +442,37 @@ onMounted(() => {
 
 .search-icon {
   position: absolute;
-  left: 0.75rem;
+  left: 0.6rem;
   top: 50%;
   transform: translateY(-50%);
-  color: var(--text-light);
-  font-size: 0.8rem;
+  color: #aaa9a3;
+  font-size: 0.75rem;
 }
 
 .search-box input {
   width: 100%;
-  padding: 0.4rem 2rem;
-  border-radius: 0;
-  border: 1px solid var(--border-color);
-  background-color: var(--panel-bg);
-  color: var(--text-color);
+  padding: 0.35rem 1.75rem;
+  border-radius: 3px;
+  border: 1px solid #dddbd4;
+  background-color: #ffffff;
+  color: #1a1a2e;
   outline: none;
-  font-size: 0.85rem;
+  font-size: 11px;
   font-family: var(--font-family);
-  transition: border-color 0.15s;
 }
 
-.search-box input:focus {
-  border-color: var(--primary-color);
+.search-box input::placeholder {
+  color: #aaa9a3;
 }
 
 .clear-search {
   position: absolute;
-  right: 0.75rem;
+  right: 0.6rem;
   top: 50%;
   transform: translateY(-50%);
   background: none;
   border: none;
-  color: var(--text-light);
+  color: #aaa9a3;
   cursor: pointer;
   padding: 0;
 }
@@ -485,10 +483,9 @@ onMounted(() => {
 }
 
 .btn {
-  padding: 0.4rem 0.75rem;
-  border-radius: 0 !important;
-  font-weight: 600;
-  font-size: 0.8rem;
+  padding: 4px 8px;
+  font-weight: 500;
+  font-size: 11px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -498,167 +495,157 @@ onMounted(() => {
 }
 
 .btn-sm {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.75rem;
+  padding: 3px 6px;
+  font-size: 10px;
 }
 
-.btn-primary {
-  background-color: var(--primary-color);
-  color: white;
+.btn-neutral {
+  border: 1px solid #dddbd4;
+  background-color: #ffffff;
+  color: #5f5e5a;
+  border-radius: 3px;
 }
 
-.btn-primary:hover {
-  background-color: var(--primary-hover);
+.btn-neutral:hover {
+  background-color: #eeecea;
 }
 
-.btn-secondary {
-  background-color: var(--panel-bg);
-  border-color: var(--border-color);
-  color: var(--text-color);
+.btn-neutral.active {
+  border-color: #4a7fc1;
+  color: #4a7fc1;
 }
 
-.btn-secondary:hover {
-  background-color: var(--bg-color);
+.btn-terracotta {
+  background-color: #fdf2ef;
+  border: 1px solid #e8c4ba;
+  color: #b05a4a;
+  border-radius: 3px;
 }
 
-.btn-secondary.active {
-  border-color: var(--primary-color);
-  color: var(--primary-color);
-}
-
-.btn-danger {
-  background-color: var(--error-color);
-  color: white;
-}
-
-.btn-danger:hover {
-  filter: brightness(0.9);
+.btn-terracotta:hover {
+  background-color: #f9e2db;
 }
 
 .btn-text {
   background: none;
   border: none;
-  color: var(--text-light);
+  color: #888780;
 }
 
 .btn-text:hover {
-  color: var(--text-color);
+  color: #1a1a2e;
 }
 
 .active-dot {
-  width: 5px;
-  height: 5px;
-  background-color: var(--primary-color);
+  width: 4px;
+  height: 4px;
+  background-color: #4a7fc1;
   border-radius: 50%;
   display: inline-block;
-  margin-left: 0.25rem;
+  margin-left: 0.2rem;
 }
 
 /* Advanced Filters Card */
 .filters-card {
-  margin: 0 1rem 0.75rem 1rem;
-  padding: 0.75rem;
-  border-radius: 0;
-  border: 1px solid var(--border-color);
-  background-color: var(--panel-bg);
+  margin: 0 10px 10px 10px;
+  padding: 10px;
+  border-radius: 3px;
+  border: 1px solid #dddbd4;
+  background-color: #ffffff;
 }
 
 .filters-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-  gap: 0.5rem;
+  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
+  gap: 0.35rem;
 }
 
 .filter-field {
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
+  gap: 0.15rem;
 }
 
 .filter-field label {
-  font-size: 0.65rem;
+  font-size: 9px;
   font-weight: 700;
-  color: var(--text-light);
+  color: #aaa9a3;
   text-transform: uppercase;
   font-family: var(--font-mono);
 }
 
 .filter-field input,
 .filter-field select {
-  padding: 0.3rem 0.4rem;
-  border-radius: 0;
-  border: 1px solid var(--border-color);
-  background-color: var(--bg-color);
-  color: var(--text-color);
+  padding: 0.25rem;
+  border-radius: 3px;
+  border: 1px solid #dddbd4;
+  background-color: #ffffff;
+  color: #1a1a2e;
   outline: none;
-  font-size: 0.75rem;
+  font-size: 10px;
 }
 
 .filter-field input:focus,
 .filter-field select:focus {
-  border-color: var(--primary-color);
+  border-color: #4a7fc1;
 }
 
 .filters-footer {
-  margin-top: 0.5rem;
+  margin-top: 0.35rem;
   display: flex;
   justify-content: flex-end;
 }
 
 /* Bulk Toolbar */
 .bulk-toolbar {
-  background-color: var(--panel-bg);
-  border: 1px solid var(--border-color);
-  border-left: 3px solid var(--primary-color);
-  padding: 0.4rem 0.75rem;
+  background-color: #eeecea; /* Bulk action bar */
+  border: 1px solid #e8e6e0;
+  padding: 6px 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 0 1rem 0.5rem 1rem;
+  margin: 0 10px 8px 10px;
+  border-radius: 3px;
 }
 
 .selected-count {
-  font-weight: 600;
-  color: var(--text-color);
-  font-size: 0.8rem;
-  font-family: var(--font-mono);
+  font-weight: 500;
+  color: #5f5e5a;
+  font-size: 11px;
 }
 
 .bulk-actions {
   display: flex;
 }
 
-.mr-2 {
-  margin-right: 0.5rem;
-}
-
-.mr-1 {
-  margin-right: 0.25rem;
-}
 
 /* Select All Bar */
 .select-all-bar {
-  padding: 0.4rem 1rem;
-  border-bottom: 1px solid var(--border-color);
+  padding: 6px 12px;
+  border-bottom: 1px solid #e8e6e0;
   display: flex;
   align-items: center;
-  background-color: var(--panel-bg);
+  background-color: #ffffff;
 }
 
 .select-all-label {
   display: flex;
   align-items: center;
   gap: 0.5rem;
-  font-size: 0.75rem;
-  color: var(--text-light);
-  font-weight: 600;
+  font-size: 11px;
+  color: #888780;
+  font-weight: 500;
   cursor: pointer;
   user-select: none;
 }
 
 .select-all-checkbox, .item-checkbox {
   cursor: pointer;
-  accent-color: var(--primary-color);
+  accent-color: #4a7fc1;
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+  border: 1px solid #dddbd4;
 }
 
 /* Error List Container */
@@ -682,22 +669,22 @@ onMounted(() => {
 .error-list-item {
   display: flex;
   flex-direction: column;
-  padding: 0.75rem 1rem;
-  border-bottom: 1px solid var(--border-color);
+  padding: 10px 12px;
+  border-bottom: 1px solid #e8e6e0;
   border-left: 2px solid transparent;
   cursor: pointer;
   transition: background-color 150ms ease, border-left-color 150ms ease;
-  background-color: var(--bg-color);
+  background-color: transparent;
+  border-radius: 0 !important; /* NO border-radius on list rows */
 }
 
 .error-list-item:hover {
-  background-color: var(--panel-bg);
-  border-left-color: var(--primary-color);
+  background-color: #eeecea; /* Hover background */
 }
 
 .error-list-item.active-item {
-  background-color: var(--panel-bg) !important;
-  border-left-color: var(--primary-color) !important;
+  background-color: #ffffff !important; /* Active background */
+  border-left: 2px solid #4a7fc1 !important; /* Active left border accent */
 }
 
 .error-list-item.reviewed-item {
@@ -708,49 +695,39 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 0.5rem;
-  margin-bottom: 0.35rem;
+  gap: 0.35rem;
+  margin-bottom: 0.25rem;
 }
 
 .item-left {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 0.4rem;
   min-width: 0;
 }
 
 .status-badge {
   font-family: var(--font-mono);
   font-weight: 700;
-  font-size: 0.7rem;
-  padding: 0.1rem 0.35rem;
+  font-size: 10px;
+  padding: 1px 4px;
   color: white;
-  min-width: 32px;
+  min-width: 28px;
   text-align: center;
   white-space: nowrap;
+  background-color: #aaa9a3; /* neutral stone gray for non-500 codes */
+  border-radius: 3px; /* 3-5px max */
 }
 
-.status-badge.error {
-  background-color: var(--error-color);
-}
-
-.status-badge.warning {
-  background-color: var(--warning-color);
-}
-
-.status-badge.info {
-  background-color: var(--primary-color);
-}
-
-.status-badge.success {
-  background-color: var(--success-color);
+.status-badge.error,
+.status-badge.status-500 {
+  background-color: #d94f4f !important; /* HTTP 500 badge ONLY */
 }
 
 .error-type-title {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 0.8rem;
-  color: var(--text-color);
+  font-weight: 500;
+  font-size: 12px;
+  color: #1a1a2e;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
@@ -758,19 +735,19 @@ onMounted(() => {
 
 .error-time-subtle {
   font-family: var(--font-mono);
-  font-size: 0.75rem;
-  color: var(--text-light);
+  font-size: 10px;
+  color: #aaa9a3;
   white-space: nowrap;
 }
 
 .item-body {
-  padding-left: 1.6rem;
+  padding-left: 1.5rem;
 }
 
 .error-message-text {
-  font-size: 0.75rem;
-  color: var(--text-light);
-  line-height: 1.35;
+  font-size: 11px;
+  color: #888780;
+  line-height: 1.4;
   word-break: break-word;
   display: -webkit-box;
   -webkit-line-clamp: 2;
@@ -779,39 +756,29 @@ onMounted(() => {
 }
 
 .active-item .error-message-text {
-  color: var(--text-color);
+  color: #1a1a2e;
 }
 
 /* Infinite Scroll Footer Styling */
 .infinite-scroll-footer {
-  padding: 0.25rem 1rem;
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  border-top: 1px solid var(--border-color);
-  font-size: 0.75rem;
-  color: var(--text-light);
-  background-color: var(--bg-color);
-  z-index: 10;
-  font-family: var(--font-mono);
-}
-
-.scroll-status-right {
-  display: flex;
-  align-items: center;
-  font-weight: 600;
+  padding: 8px 12px;
+  border-top: 1px solid #e8e6e0;
+  font-size: 11px;
+  color: #aaa9a3;
+  background-color: #f7f6f2;
+  text-align: center;
 }
 
 /* Empty & Skeleton states */
 .empty-state {
   text-align: center;
   padding: 3rem;
-  color: var(--text-light);
+  color: #aaa9a3;
 }
 
 .empty-icon {
-  font-size: 2.5rem;
-  margin-bottom: 0.75rem;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
 }
 
 .text-success {
@@ -823,8 +790,8 @@ onMounted(() => {
 }
 
 .skeleton-row {
-  height: 60px;
-  background: linear-gradient(90deg, var(--bg-color) 25%, var(--border-color) 50%, var(--bg-color) 75%);
+  height: 50px;
+  background: linear-gradient(90deg, #f7f6f2 25%, #e8e6e0 50%, #f7f6f2 75%);
   background-size: 200% 100%;
   animation: loading 1.5s infinite;
   margin-bottom: 0.5rem;
@@ -845,14 +812,14 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: var(--text-light);
+  color: #aaa9a3;
   padding: 3rem;
   text-align: center;
 }
 
 .placeholder-icon {
-  font-size: 2.5rem;
-  margin-bottom: 0.75rem;
+  font-size: 2rem;
+  margin-bottom: 0.5rem;
 }
 
 /* Responsive Overrides */
@@ -881,7 +848,7 @@ onMounted(() => {
     flex: none;
     height: auto;
     border-left: none;
-    border-top: 1px solid var(--border-color);
+    border-top: 1px solid #e8e6e0;
   }
 }
 </style>

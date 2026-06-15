@@ -1,6 +1,6 @@
 import axios from 'axios';
 
-// Detect mount path dynamically (fallback to '/elmah')
+
 const elmahRoot = window.$elmah_root || '/elmah';
 const cleanRoot = '/' + elmahRoot.replace(/^\/|\/$/g, '');
 
@@ -11,14 +11,14 @@ const api = axios.create({
   }
 });
 
-// Response interceptor to handle enveloped responses: { success, data, error }
+
 api.interceptors.response.use(
   (response) => {
     const resData = response.data;
     if (resData && resData.success === false) {
       return Promise.reject(new Error(resData.error || 'API Request failed'));
     }
-    return resData; // Returns { success, data, error }
+    return resData;
   },
   (error) => {
     const msg = error.response?.data?.error || error.message || 'Network error';

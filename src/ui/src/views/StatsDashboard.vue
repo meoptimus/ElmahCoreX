@@ -107,17 +107,17 @@ import dayjs from 'dayjs';
 const errors = ref([]);
 const loading = ref(true);
 
-// Canvas Refs
+
 const trendChartCanvas = ref(null);
 const typeChartCanvas = ref(null);
 const statusChartCanvas = ref(null);
 
-// Chart Instances
+
 let trendChart = null;
 let typeChart = null;
 let statusChart = null;
 
-// Metrics Computations
+
 const uniqueTypesCount = computed(() => {
   const types = errors.value.map(e => e.error.type);
   return new Set(types).size;
@@ -142,11 +142,11 @@ const topExceptionNameShort = computed(() => {
   return parts[parts.length - 1];
 });
 
-// Aggregations for Lists
+
 const topUrls = computed(() => {
   const counts = {};
   errors.value.forEach(e => {
-    // Reconstruct URL
+
     const url = e.error.url || 'N/A';
     counts[url] = (counts[url] || 0) + 1;
   });
@@ -169,20 +169,20 @@ const topUsers = computed(() => {
     .slice(0, 5);
 });
 
-// API data load
+
 const loadStatsData = async () => {
   loading.value = true;
   try {
-    // Load last 500 errors to create a solid metrics baseline
+
     const res = await elmahApi.getErrors(0, 500, {});
     if (res.success && res.data) {
       errors.value = res.data.errors || [];
     }
 
-    // Set loading to false so that v-else DOM elements (canvases) are rendered
+
     loading.value = false;
 
-    // Render charts
+
     await nextTick();
     renderCharts();
   } catch (err) {
@@ -194,7 +194,7 @@ const loadStatsData = async () => {
 const renderCharts = () => {
   if (errors.value.length === 0) return;
 
-  // 1. Error Rate trend over days (pre-populate last 7 days)
+
   const dailyCounts = {};
   for (let i = 6; i >= 0; i--) {
     const day = dayjs().subtract(i, 'day').format('MM-DD');
@@ -209,7 +209,7 @@ const renderCharts = () => {
     }
   });
   
-  // Sort keys chronologically
+
   const trendLabels = Object.keys(dailyCounts).sort();
   const trendData = trendLabels.map(lbl => dailyCounts[lbl]);
 
@@ -241,7 +241,7 @@ const renderCharts = () => {
     });
   }
 
-  // 2. Exception Types Top Bar Chart
+
   const typeCounts = {};
   errors.value.forEach(e => {
     const type = e.error.type || 'Unknown';
@@ -277,7 +277,7 @@ const renderCharts = () => {
     });
   }
 
-  // 3. Status Code Breakdown
+
   const statusCounts = {};
   errors.value.forEach(e => {
     const code = e.error.statusCode || 500;
@@ -318,39 +318,37 @@ onMounted(() => {
 .stats-dashboard-view {
   display: flex;
   flex-direction: column;
-  gap: 1.5rem;
+  gap: 16px;
+  padding: 16px 20px;
 }
 
 .card {
-  background-color: var(--panel-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  background-color: #ffffff;
+  border: 1px solid #e8e6e0;
+  border-radius: 0;
+  padding: 16px 20px;
+  box-shadow: none;
 }
 
 .mb-3 {
-  margin-bottom: 0.75rem;
-}
-
-.mr-1 {
-  margin-right: 0.25rem;
+  margin-bottom: 12px;
 }
 
 .font-mono {
-  font-family: SFMono-Regular, Consolas, Monaco, monospace;
+  font-family: var(--font-mono), monospace;
 }
 
 .font-bold {
-  font-weight: 700;
+  font-weight: 500;
+  color: #1a1a2e;
 }
 
 .text-danger {
-  color: var(--error-color);
+  color: #d94f4f;
 }
 
 .text-primary {
-  color: var(--primary-color);
+  color: #4a7fc1;
 }
 
 .truncate-text {
@@ -367,58 +365,62 @@ onMounted(() => {
 .loading-state,
 .empty-state {
   text-align: center;
-  padding: 4rem;
-  color: var(--text-light);
+  padding: 40px;
+  color: #888780;
 }
 
 .loading-icon {
-  font-size: 2.5rem;
-  color: var(--primary-color);
-  margin-bottom: 1rem;
+  font-size: 32px;
+  color: #4a7fc1;
+  margin-bottom: 16px;
 }
 
 .empty-icon {
-  font-size: 3.5rem;
-  margin-bottom: 1rem;
+  font-size: 40px;
+  margin-bottom: 16px;
 }
 
 .dashboard-grid {
   display: flex;
   flex-direction: column;
-  gap: 1.25rem;
+  gap: 16px;
 }
 
 /* Metrics Row */
 .metrics-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 1.25rem;
+  gap: 16px;
 }
 
 .metric-card {
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 4px;
+  background-color: #ffffff;
+  border: 1px solid #e8e6e0;
 }
 
 .metric-label {
-  font-size: 0.75rem;
-  font-weight: 700;
-  color: var(--text-light);
+  font-size: 10px;
   text-transform: uppercase;
-  letter-spacing: 0.05em;
+  letter-spacing: 0.08em;
+  color: #aaa9a3;
+  font-weight: 600;
 }
 
 .metric-value {
-  font-size: 1.75rem;
-  font-weight: 800;
+  font-size: 24px;
+  font-family: var(--font-mono), monospace;
+  font-weight: 500;
+  color: #1a1a2e;
 }
 
 /* Charts Section */
 .charts-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.25rem;
+  gap: 16px;
 }
 
 @media (min-width: 1024px) {
@@ -437,10 +439,14 @@ onMounted(() => {
 }
 
 .chart-title {
-  margin: 0 0 1rem 0;
-  font-size: 1rem;
-  font-weight: 700;
-  color: var(--text-color);
+  margin: 0 0 16px 0;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #aaa9a3;
+  font-weight: 600;
+  border-bottom: 1px solid #e8e6e0;
+  padding-bottom: 8px;
 }
 
 .chart-container {
@@ -453,7 +459,7 @@ onMounted(() => {
 .lists-row {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 1.25rem;
+  gap: 16px;
 }
 
 .list-card {
@@ -462,9 +468,14 @@ onMounted(() => {
 }
 
 .list-title {
-  margin: 0 0 1rem 0;
-  font-size: 1rem;
-  font-weight: 700;
+  margin: 0 0 16px 0;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #aaa9a3;
+  font-weight: 600;
+  border-bottom: 1px solid #e8e6e0;
+  padding-bottom: 8px;
 }
 
 .stats-list {
@@ -473,33 +484,32 @@ onMounted(() => {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.75rem;
 }
 
 .stats-list li {
   display: flex;
   align-items: center;
-  gap: 1rem;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 0.5rem;
+  gap: 12px;
+  border-bottom: 1px solid #e8e6e0;
+  padding: 10px 12px;
 }
 
 .stats-list li:last-child {
   border-bottom: none;
-  padding-bottom: 0;
 }
 
 .list-index {
-  background-color: var(--primary-light);
-  color: var(--primary-color);
+  background-color: #eeecea;
+  color: #5f5e5a;
   width: 24px;
   height: 24px;
-  border-radius: 50%;
+  border-radius: 4px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-weight: 700;
-  font-size: 0.8rem;
+  font-weight: 500;
+  font-size: 11px;
+  font-family: var(--font-mono), monospace;
 }
 
 .list-content {
@@ -507,25 +517,26 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 1rem;
+  gap: 16px;
 }
 
 .list-name {
-  font-size: 0.875rem;
+  font-size: 13px;
   word-break: break-all;
   flex: 1;
+  color: #1a1a2e;
 }
 
 .list-count {
-  font-size: 0.8rem;
-  color: var(--text-light);
+  font-size: 12px;
+  color: #888780;
   white-space: nowrap;
 }
 
 .empty-list-state {
   text-align: center;
-  padding: 2rem;
-  color: var(--text-light);
-  font-size: 0.9rem;
+  padding: 32px;
+  color: #888780;
+  font-size: 13px;
 }
 </style>

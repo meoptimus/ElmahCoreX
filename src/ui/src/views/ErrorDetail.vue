@@ -17,7 +17,7 @@
         >
           <i class="pi pi-chevron-left mr-1"></i> Prev
         </button>
-        <span class="nav-position-text">
+        <span class="nav-position-text font-mono">
           {{ currentIndex + 1 }} of {{ errorListIds.length }}
         </span>
         <button 
@@ -36,97 +36,89 @@
       <transition name="fade-fast" mode="out-in">
         <div :key="error.id || props.id" class="detail-transition-container">
           
-          <!-- Unified Error Details Header Section -->
-          <div class="unified-header-section mb-4">
-            <!-- Action Bar Row -->
-            <div class="action-bar-section">
-              <div class="action-top">
-                <span class="status-code-badge" :class="getSeverityClass(error.statusCode)">
-                  {{ error.statusCode || '500' }}
-                </span>
-                <div class="error-meta">
-                  <div class="exception-type-tag font-mono">{{ error.type }}</div>
-                  <h1 class="error-message-detail">{{ error.message }}</h1>
+          <!-- Panel Header Inline Row -->
+          <div class="panel-header-inline mb-4">
+            <span class="status-code-badge" :class="[getSeverityClass(error?.statusCode), 'status-' + error?.statusCode]">
+              {{ error?.statusCode || '500' }}
+            </span>
+            <span class="exception-type-tag font-mono">
+              {{ error.type }}
+            </span>
+          </div>
+
+          <!-- Error message title -->
+          <h1 class="error-message-detail">{{ error.message }}</h1>
+
+          <!-- Action row below title, before tabs -->
+          <div class="action-buttons mb-4">
+            <!-- Mark Reviewed Toggle -->
+            <button 
+              class="btn btn-sm btn-neutral" 
+              @click="toggleReviewed"
+            >
+              <i :class="error.isReviewed ? 'pi pi-check-circle mr-1' : 'pi pi-circle mr-1'"></i>
+              {{ error.isReviewed ? 'Reviewed' : 'Mark Reviewed' }}
+            </button>
+
+            <!-- Copy GUID -->
+            <button class="btn btn-neutral btn-sm" @click="copyToClipboard(props.id, 'Error ID copied!')" title="Copy Error GUID">
+              <i class="pi pi-copy mr-1"></i> Copy GUID
+            </button>
+
+            <!-- Share -->
+            <button class="btn btn-neutral btn-sm" @click="shareLink" title="Copy Share Link">
+              <i class="pi pi-share-alt mr-1"></i> Share
+            </button>
+
+            <!-- Delete -->
+            <button class="btn btn-delete-terracotta btn-sm" @click="deleteError">
+              <i class="pi pi-trash mr-1"></i> Delete
+            </button>
+          </div>
+
+          <!-- Metadata Section -->
+          <div class="metadata-section mb-4">
+            <div class="metadata-grid">
+              <!-- Row 1 -->
+              <div class="metadata-row">
+                <div class="metadata-item">
+                  <span class="meta-label">When</span>
+                  <span class="meta-value font-mono">{{ formatTime(error.time) }}</span>
+                </div>
+                <div class="metadata-item">
+                  <span class="meta-label">Client IP</span>
+                  <span class="meta-value font-mono select-all">{{ error.client || 'N/A' }}</span>
+                </div>
+                <div class="metadata-item">
+                  <span class="meta-label">User</span>
+                  <span class="meta-value font-mono select-all">{{ error.user || 'N/A' }}</span>
                 </div>
               </div>
               
-              <div class="action-buttons mt-3">
-                <!-- Mark Reviewed Toggle -->
-                <button 
-                  class="btn btn-sm" 
-                  :class="error.isReviewed ? 'btn-success' : 'btn-secondary'"
-                  @click="toggleReviewed"
-                >
-                  <i :class="error.isReviewed ? 'pi pi-check-circle mr-1' : 'pi pi-circle mr-1'"></i>
-                  {{ error.isReviewed ? 'Reviewed' : 'Mark Reviewed' }}
-                </button>
-
-                <!-- Copy GUID -->
-                <button class="btn btn-secondary btn-sm" @click="copyToClipboard(props.id, 'Error ID copied!')" title="Copy Error GUID">
-                  <i class="pi pi-copy mr-1"></i> Copy GUID
-                </button>
-
-                <!-- Share -->
-                <button class="btn btn-secondary btn-sm" @click="shareLink" title="Copy Share Link">
-                  <i class="pi pi-share-alt mr-1"></i> Share
-                </button>
-
-                <!-- Delete -->
-                <button class="btn btn-danger btn-sm" @click="deleteError">
-                  <i class="pi pi-trash mr-1"></i> Delete
-                </button>
+              <!-- Row 2 -->
+              <div class="metadata-row">
+                <div class="metadata-item">
+                  <span class="meta-label">Host</span>
+                  <span class="meta-value font-mono">{{ error.hostName || 'N/A' }}</span>
+                </div>
+                <div class="metadata-item">
+                  <span class="meta-label">Application</span>
+                  <span class="meta-value font-mono">{{ error.applicationName || 'N/A' }}</span>
+                </div>
+                <div class="metadata-item">
+                  <span class="meta-label">Source</span>
+                  <span class="meta-value font-mono text-break">{{ error.source || 'N/A' }}</span>
+                </div>
               </div>
             </div>
-
-            <!-- Metadata Section -->
-            <div class="metadata-section">
-              <div class="metadata-grid">
-                <div class="metadata-main">
-                  <div class="metadata-grid-cols">
-                    <div class="metadata-item">
-                      <span class="meta-label">When</span>
-                      <span class="meta-value font-mono">{{ formatTime(error.time) }}</span>
-                    </div>
-                    <div class="metadata-item" v-if="error.client">
-                      <span class="meta-label">Client IP</span>
-                      <span class="meta-value font-mono select-all">{{ error.client }}</span>
-                    </div>
-                    <div class="metadata-item" v-if="error.user">
-                      <span class="meta-label">User</span>
-                      <span class="meta-value select-all">{{ error.user }}</span>
-                    </div>
-                    <div class="metadata-item" v-if="error.hostName">
-                      <span class="meta-label">Host</span>
-                      <span class="meta-value font-mono">{{ error.hostName }}</span>
-                    </div>
-                    <div class="metadata-item" v-if="error.applicationName">
-                      <span class="meta-label">Application</span>
-                      <span class="meta-value">{{ error.applicationName }}</span>
-                    </div>
-                    <div class="metadata-item" v-if="error.source">
-                      <span class="meta-label">Source</span>
-                      <span class="meta-value font-mono text-break">{{ error.source }}</span>
-                    </div>
-                    <div class="metadata-item text-break span-full" v-if="error.url">
-                      <span class="meta-label">URL</span>
-                      <span class="meta-value font-mono select-all">
-                        <span class="method-badge" :class="getSeverityClass(error.statusCode)">{{ error.method }}</span>
-                        {{ error.url }}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div class="metadata-sidebar" v-if="error.os || error.browser">
-                  <div class="client-icon-card" v-if="error.os">
-                    <i class="pi" :class="[getOsIcon(error.os), 'os-icon-' + error.os.toLowerCase()]"></i>
-                    <span class="client-label">{{ error.os }}</span>
-                  </div>
-                  <div class="client-icon-card" v-if="error.browser">
-                    <i class="pi" :class="[getBrowserIcon(error.browser), 'browser-icon-' + error.browser.toLowerCase()]"></i>
-                    <span class="client-label">{{ error.browser }}</span>
-                  </div>
-                </div>
-              </div>
+            
+            <!-- URL row: separate full-width strip below meta grid -->
+            <div class="url-row-strip" v-if="error.url">
+              <span class="meta-label">URL</span>
+              <span class="meta-value font-mono select-all url-value">
+                <span class="method-badge" :class="error.method">{{ error.method }}</span>
+                {{ error.url }}
+              </span>
             </div>
           </div>
 
@@ -157,7 +149,7 @@
                   </div>
                   <div class="info-item">
                     <span class="info-label">Error Message</span>
-                    <span class="info-value font-bold">{{ error.message }}</span>
+                    <span class="info-value">{{ error.message }}</span>
                   </div>
                 </div>
               </div>
@@ -360,7 +352,7 @@
                   <div class="xml-actions mb-3">
                     <button class="btn btn-secondary btn-sm" @click="copyXml">
                       <i class="pi pi-copy mr-1"></i> Copy XML
-                  </button>
+                    </button>
                   </div>
                   <pre class="xml-raw font-mono select-all"><code>{{ rawXml }}</code></pre>
                 </div>
@@ -421,7 +413,7 @@ const sqlEntries = computed(() => {
   return error.value.sqlLog || error.value.SqlLog || [];
 });
 
-// Prev/Next Navigation helpers
+
 const errorListIds = computed(() => store.errors.map(e => e.id));
 const currentIndex = computed(() => errorListIds.value.indexOf(props.id));
 const hasPrev = computed(() => currentIndex.value > 0);
@@ -439,7 +431,7 @@ const fetchErrorDetails = async (id) => {
       error.value = res.data.error;
     }
 
-    // Also load raw XML
+    
     const xmlUrl = `${elmahApi.getExportUrl('xml')}`.replace('api/export', 'xml') + `&id=${id}`;
     const xmlRes = await axios.get(xmlUrl, { responseType: 'text' });
     rawXml.value = xmlRes.data;
@@ -498,19 +490,13 @@ const copyXml = () => {
   copyToClipboard(rawXml.value, 'Raw XML copied to clipboard!');
 };
 
-// Utilities
+
 const hasItems = (obj) => {
   return obj && Object.keys(obj).length > 0;
 };
 
 const formatTime = (time) => {
   return dayjs(time).format('YYYY-MM-DD HH:mm:ss.SSS');
-};
-
-const getShortTypeName = (type) => {
-  if (!type) return 'Error';
-  const parts = type.split('.');
-  return parts[parts.length - 1];
 };
 
 const getSeverityClass = (statusCode) => {
@@ -654,7 +640,7 @@ const formatRawStackTrace = (text) => {
   return formattedLines.join('\n');
 };
 
-// Listen for route ID changes (prev/next navigation)
+
 watch(() => props.id, (newId) => {
   if (newId) {
     fetchErrorDetails(newId);
@@ -667,7 +653,7 @@ watch(() => props.id, (newId) => {
   display: flex;
   flex-direction: column;
   height: 100%;
-  padding: 1rem 1.5rem 1.5rem 1.5rem;
+  padding: 16px 20px; /* Panel padding: 16px 20px */
 }
 
 .detail-header {
@@ -675,7 +661,7 @@ watch(() => props.id, (newId) => {
   justify-content: space-between;
   align-items: center;
   padding-bottom: 0.5rem;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid #e8e6e0;
 }
 
 .breadcrumb {
@@ -696,12 +682,12 @@ watch(() => props.id, (newId) => {
 
 .breadcrumb-separator {
   margin: 0 0.5rem;
-  color: var(--text-light);
+  color: #aaa9a3;
   font-size: 0.7rem;
 }
 
 .breadcrumb-current {
-  color: var(--text-color);
+  color: #1a1a2e;
   font-weight: 500;
 }
 
@@ -721,78 +707,52 @@ watch(() => props.id, (newId) => {
   min-height: 0;
 }
 
-/* Unified Header Section */
-.unified-header-section {
+/* Panel Header Inline */
+.panel-header-inline {
   display: flex;
-  flex-direction: column;
-  border: none;
-  background: transparent;
-}
-
-.action-bar-section {
-  padding-bottom: 1.25rem;
-  border-bottom: 1px solid var(--border-color);
-}
-
-.action-top {
-  display: flex;
-  align-items: flex-start;
-  gap: 1rem;
+  align-items: center;
+  gap: 0.5rem;
+  padding-bottom: 0.5rem;
+  border-bottom: 1px solid #e8e6e0;
 }
 
 .status-code-badge {
-  padding: 0.35rem 0.75rem;
-  border-radius: 0;
-  font-size: 1.1rem;
-  font-weight: 700;
   font-family: var(--font-mono);
-  min-width: 50px;
-  text-align: center;
+  font-weight: 700;
+  font-size: 11px;
+  padding: 2px 6px;
   color: white;
+  min-width: 32px;
+  text-align: center;
+  white-space: nowrap;
+  background-color: #aaa9a3;
+  border-radius: 3px;
 }
 
-.status-code-badge.error {
-  background-color: var(--error-color);
-}
-
-.status-code-badge.warning {
-  background-color: var(--warning-color);
-}
-
-.status-code-badge.success {
-  background-color: var(--success-color);
-}
-
-.status-code-badge.info {
-  background-color: var(--primary-color);
-}
-
-.error-meta {
-  display: flex;
-  flex-direction: column;
-  flex: 1;
-  min-width: 0;
+.status-code-badge.error,
+.status-code-badge.status-500 {
+  background-color: #d94f4f !important; /* HTTP 500 badge ONLY */
 }
 
 .exception-type-tag {
   display: inline-block;
   font-family: var(--font-mono);
-  font-size: 0.8rem;
-  font-weight: 600;
-  background-color: var(--border-color);
-  color: var(--text-color);
-  padding: 0.2rem 0.5rem;
-  margin-bottom: 0.5rem;
-  align-self: flex-start;
+  font-size: 11px;
+  background-color: #eeecea;
+  border: 1px solid #dddbd4;
+  color: #5f5e5a;
+  padding: 2px 6px;
+  border-radius: 3px;
   word-break: break-all;
 }
 
 .error-message-detail {
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 500;
   line-height: 1.5;
-  color: var(--text-color);
-  margin: 0;
+  color: #1a1a2e;
+  margin: 1rem 0;
+  max-width: 700px;
 }
 
 .action-buttons {
@@ -802,10 +762,9 @@ watch(() => props.id, (newId) => {
 }
 
 .btn {
-  padding: 0.35rem 0.75rem;
-  border-radius: 0 !important;
-  font-weight: 600;
-  font-size: 0.8rem;
+  padding: 4px 8px;
+  font-weight: 500;
+  font-size: 11px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
@@ -814,142 +773,125 @@ watch(() => props.id, (newId) => {
   transition: all 0.15s;
 }
 
-.btn-icon {
-  width: 28px;
-  height: 28px;
-  padding: 0;
-}
-
-.btn-sm {
-  padding: 0.25rem 0.5rem;
-  font-size: 0.75rem;
-}
-
-.btn-success {
-  background-color: var(--success-color);
-  color: white;
-}
-
 .btn-secondary {
-  background-color: var(--panel-bg);
-  border-color: var(--border-color);
-  color: var(--text-color);
+  background-color: #ffffff;
+  border-color: #dddbd4;
+  color: #5f5e5a;
+  border-radius: 3px;
 }
 
-.btn-secondary:hover {
-  background-color: var(--bg-color);
+.btn-secondary:hover:not(:disabled) {
+  background-color: #eeecea;
 }
 
-.btn-danger {
-  background-color: var(--error-color);
-  color: white;
+.btn-neutral {
+  border: 1px solid #dddbd4;
+  background: #fff;
+  color: #5f5e5a;
+  border-radius: 3px;
 }
 
-.btn-danger:hover {
-  filter: brightness(0.9);
+.btn-neutral:hover {
+  background-color: #eeecea;
+}
+
+.btn-delete-terracotta {
+  background-color: #fdf2ef;
+  border: 1px solid #e8c4ba;
+  color: #b05a4a;
+  border-radius: 3px;
+}
+
+.btn-delete-terracotta:hover {
+  background-color: #f9e2db;
+}
+
+.nav-position-text {
+  font-size: 11px;
+  color: #5f5e5a;
 }
 
 /* Metadata Section */
 .metadata-section {
-  padding: 1.25rem 0;
-  border-bottom: 1px solid var(--border-color);
+  padding: 0;
+  border: 1px solid #e8e6e0;
   background: transparent;
 }
 
 .metadata-grid {
   display: flex;
-  justify-content: space-between;
-  gap: 1.5rem;
-}
-
-.metadata-main {
-  flex: 1;
-  display: flex;
   flex-direction: column;
-  gap: 0.5rem;
 }
 
-.metadata-grid-cols {
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  gap: 0.75rem 1rem;
+.metadata-row {
+  display: flex;
+  width: 100%;
+  border-bottom: 1px solid #e8e6e0;
 }
 
-.metadata-item.span-full {
-  grid-column: span 3;
+.metadata-row:last-child {
+  border-bottom: none;
 }
 
 .metadata-item {
+  flex: 1;
   display: flex;
   flex-direction: column;
-  gap: 0.2rem;
-  min-width: 100px;
+  gap: 0.15rem;
+  padding: 8px 12px;
+  border-right: 1px solid #e8e6e0;
+  min-width: 0;
+}
+
+.metadata-item:last-child {
+  border-right: none;
 }
 
 .meta-label, .info-label {
   font-size: 10px;
-  font-weight: 400;
+  font-weight: 500;
   text-transform: uppercase;
-  letter-spacing: 0.1em;
-  color: var(--text-light) !important;
+  letter-spacing: 0.08em;
+  color: #aaa9a3 !important;
 }
 
 .meta-value {
-  font-size: 0.8rem;
-  color: var(--text-color);
+  font-size: 13px;
+  font-family: var(--font-mono);
+  color: #1a1a2e;
   word-break: break-all;
 }
 
-.method-badge {
-  background-color: var(--primary-color);
-  color: white;
-  padding: 0.05rem 0.3rem;
-  font-size: 0.65rem;
-  font-weight: 700;
-  margin-right: 0.4rem;
-  text-transform: uppercase;
-}
-
-.method-badge.error {
-  background-color: var(--error-color);
-}
-.method-badge.warning {
-  background-color: var(--warning-color);
-}
-.method-badge.success {
-  background-color: var(--success-color);
-}
-
-.metadata-sidebar {
-  display: flex;
-  gap: 0.5rem;
-  align-items: center;
-  border-left: 1px solid var(--border-color);
-  padding-left: 1rem;
-}
-
-.client-icon-card {
+.url-row-strip {
+  padding: 8px 12px;
+  border-top: 1px solid #e8e6e0;
   display: flex;
   flex-direction: column;
+  gap: 0.15rem;
+}
+
+.url-value {
+  display: flex;
   align-items: center;
-  justify-content: center;
-  background-color: transparent;
-  border: 1px solid var(--border-color);
-  border-radius: 0;
-  padding: 0.35rem 0.5rem;
-  min-width: 65px;
-  text-align: center;
+  gap: 0.5rem;
+  font-size: 13px;
+  color: #1a1a2e;
 }
 
-.client-icon-card i {
-  font-size: 1.1rem;
-  margin-bottom: 0.2rem;
-}
-
-.client-label {
-  font-size: 0.65rem;
+.method-badge {
+  padding: 2px 6px;
+  font-size: 11px;
   font-weight: 600;
-  color: var(--text-color);
+  font-family: var(--font-mono);
+  border-radius: 3px;
+  text-transform: uppercase;
+  background-color: #eeecea;
+  color: #5f5e5a;
+}
+
+.method-badge.GET {
+  background-color: #e3edf8 !important;
+  color: #2b5fa0 !important;
 }
 
 /* Detail Card & Tabs */
@@ -964,7 +906,7 @@ watch(() => props.id, (newId) => {
 .tabs-nav {
   display: flex;
   background: transparent;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid #e8e6e0;
   padding: 0;
   overflow-x: auto;
   margin-bottom: 1rem;
@@ -974,25 +916,30 @@ watch(() => props.id, (newId) => {
   background: none;
   border: none;
   padding: 0.5rem 1rem;
-  color: var(--text-light);
+  color: #888780;
   cursor: pointer;
   font-weight: 500;
-  font-size: 0.85rem;
+  font-size: 12px; /* Inactive: 12px */
   border-bottom: 2px solid transparent;
   transition: all 150ms ease-in-out;
   display: flex;
   align-items: center;
   white-space: nowrap;
+  border-radius: 0 !important;
+}
+
+.tab-btn i {
+  font-size: 13px !important;
+  margin-right: 4px;
 }
 
 .tab-btn:hover {
-  color: var(--text-color);
-  border-bottom-color: var(--border-color);
+  color: #1a1a2e;
 }
 
 .tab-btn.active {
-  color: var(--primary-color) !important;
-  border-bottom-color: var(--primary-color) !important;
+  color: #4a7fc1 !important;
+  border-bottom-color: #4a7fc1 !important;
 }
 
 .tab-content {
@@ -1005,14 +952,14 @@ watch(() => props.id, (newId) => {
 .info-grid {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0.75rem;
 }
 
 .info-item {
   display: flex;
   flex-direction: column;
   gap: 0.2rem;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid #e8e6e0;
   padding-bottom: 0.75rem;
 }
 
@@ -1022,18 +969,23 @@ watch(() => props.id, (newId) => {
 }
 
 .info-value {
-  font-size: 0.85rem;
-  color: var(--text-color);
+  font-size: 13px;
+  color: #1a1a2e;
   word-break: break-word;
+}
+
+.info-value.font-mono {
+  font-family: var(--font-mono) !important;
+  color: #4a5568 !important;
 }
 
 /* Stack Trace */
 .stacktrace-container {
-  background-color: var(--bg-color);
-  color: var(--text-color);
-  border: 1px solid var(--border-color);
+  background-color: #f7f6f2; /* matches warm parchment background */
+  color: #1a1a2e;
+  border: 1px solid #e8e6e0;
   padding: 1rem;
-  border-radius: 0;
+  border-radius: 3px;
   overflow: auto;
   max-height: 500px;
 }
@@ -1046,7 +998,7 @@ watch(() => props.id, (newId) => {
 }
 
 :deep(.stacktrace-html a) {
-  color: var(--primary-color);
+  color: #4a7fc1;
   text-decoration: underline;
 }
 
@@ -1056,7 +1008,7 @@ watch(() => props.id, (newId) => {
 }
 
 :deep(.st-type) {
-  color: #2563eb;
+  color: #2b5fa0;
   font-weight: 600;
 }
 
@@ -1066,7 +1018,7 @@ watch(() => props.id, (newId) => {
 }
 
 :deep(.params) {
-  color: var(--text-light);
+  color: #888780;
 }
 
 :deep(.st-param-type) {
@@ -1074,7 +1026,7 @@ watch(() => props.id, (newId) => {
 }
 
 :deep(.st-param-name) {
-  color: var(--text-light);
+  color: #888780;
   font-style: italic;
 }
 
@@ -1090,88 +1042,56 @@ watch(() => props.id, (newId) => {
 
 :deep(.st-caller-line) {
   display: block;
-  background-color: var(--border-color);
-  color: var(--text-color);
+  background-color: #eeecea;
+  color: #1a1a2e;
   padding: 0.5rem 0.75rem;
-  border-radius: 0;
-  border: 1px solid var(--border-color);
+  border-radius: 3px;
+  border: 1px solid #dddbd4;
   margin-bottom: 0.75rem;
   font-weight: 600;
   font-family: var(--font-mono);
 }
 
 :deep(.st-caller-path) {
-  color: var(--error-color);
+  color: #b05a4a;
   font-weight: 700;
   text-decoration: underline;
 }
 
 :deep(.st-exception-type) {
-  color: var(--error-color);
+  color: #b05a4a;
   font-weight: bold;
 }
 
 :deep(.st-exception-msg) {
-  color: var(--text-color);
-}
-
-html.dark-mode :deep(.st-type) {
-  color: #60a5fa;
-}
-
-html.dark-mode :deep(.st-method) {
-  color: #2dd4bf;
-}
-
-html.dark-mode :deep(.st-param-type) {
-  color: #93c5fd;
-}
-
-html.dark-mode :deep(.st-param-name) {
-  color: #cbd5e1;
-}
-
-html.dark-mode :deep(.st-file) {
-  color: #f472b6;
-}
-
-html.dark-mode :deep(.st-line) {
-  color: #f472b6;
-}
-
-html.dark-mode :deep(.st-exception-type) {
-  color: #fda4af;
-}
-
-html.dark-mode :deep(.st-exception-msg) {
-  color: #f1f5f9;
+  color: #1a1a2e;
 }
 
 /* Source Context Code */
 .source-card {
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid #e8e6e0;
   padding: 0;
 }
 
 .source-header {
-  background-color: var(--bg-color);
+  background-color: #eeecea;
   padding: 0.5rem 1rem;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid #e8e6e0;
   display: flex;
   justify-content: space-between;
   font-size: 0.8rem;
-  color: var(--text-light);
+  color: #888780;
   font-family: var(--font-mono);
 }
 
 .source-code {
   margin: 0;
   padding: 1rem;
-  background-color: var(--bg-color);
-  color: var(--text-color);
+  background-color: #f7f6f2;
+  color: #1a1a2e;
   font-size: 0.8rem;
   overflow-x: auto;
-  border: 1px solid var(--border-color);
+  border: 1px solid #e8e6e0;
   font-family: var(--font-mono);
 }
 
@@ -1186,13 +1106,13 @@ html.dark-mode :deep(.st-exception-msg) {
 .data-table th,
 .data-table td {
   padding: 0.4rem 0.6rem;
-  border-bottom: 1px solid var(--border-color);
+  border-bottom: 1px solid #e8e6e0;
 }
 
 .data-table th {
   text-align: left;
-  background-color: var(--bg-color);
-  color: var(--text-light);
+  background-color: #eeecea;
+  color: #5f5e5a;
   font-weight: 600;
   text-transform: uppercase;
   font-size: 0.7rem;
@@ -1201,8 +1121,8 @@ html.dark-mode :deep(.st-exception-msg) {
 
 /* Request Body and parameters styling */
 .body-card {
-  background-color: var(--bg-color);
-  border: 1px solid var(--border-color);
+  background-color: #f7f6f2;
+  border: 1px solid #e8e6e0;
   padding: 1rem;
 }
 
@@ -1215,22 +1135,22 @@ html.dark-mode :deep(.st-exception-msg) {
 
 .param-card {
   padding: 0;
-  border: 1px solid var(--border-color);
+  border: 1px solid #e8e6e0;
 }
 
 .param-header {
   padding: 0.4rem 0.8rem;
-  background-color: var(--bg-color);
-  border-bottom: 1px solid var(--border-color);
+  background-color: #eeecea;
+  border-bottom: 1px solid #e8e6e0;
   display: flex;
   justify-content: space-between;
   align-items: center;
 }
 
 .xml-raw {
-  background-color: var(--bg-color);
+  background-color: #f7f6f2;
   padding: 1rem;
-  border: 1px solid var(--border-color);
+  border: 1px solid #e8e6e0;
   overflow: auto;
   max-height: 350px;
   font-size: 0.8rem;
@@ -1247,23 +1167,23 @@ html.dark-mode :deep(.st-exception-msg) {
 .skeleton-title {
   height: 25px;
   width: 40%;
-  background: var(--border-color);
+  background: #e8e6e0;
 }
 
 .skeleton-para {
   height: 18px;
-  background: var(--border-color);
+  background: #e8e6e0;
 }
 
 /* SQL Log Tab Styling */
 .sql-card {
-  border: 1px solid var(--border-color);
+  border: 1px solid #e8e6e0;
   overflow: hidden;
 }
 
 .sql-header {
-  background-color: var(--bg-color);
-  border-bottom: 1px solid var(--border-color);
+  background-color: #eeecea;
+  border-bottom: 1px solid #e8e6e0;
   display: flex;
   justify-content: space-between;
   align-items: center;
@@ -1271,8 +1191,8 @@ html.dark-mode :deep(.st-exception-msg) {
 }
 
 .sql-text {
-  background-color: var(--bg-color);
-  color: var(--text-color);
+  background-color: #f7f6f2;
+  color: #1a1a2e;
   padding: 1rem;
   margin: 0;
   white-space: pre-wrap;
@@ -1281,12 +1201,12 @@ html.dark-mode :deep(.st-exception-msg) {
   max-height: 300px;
   overflow-y: auto;
   font-family: var(--font-mono);
-  border-top: 1px solid var(--border-color);
+  border-top: 1px solid #e8e6e0;
 }
 
 .badge-primary {
-  background-color: var(--border-color);
-  color: var(--text-color);
+  background-color: #eeecea;
+  color: #5f5e5a;
   padding: 0.2rem 0.5rem;
   font-size: 0.7rem;
   font-weight: 700;
@@ -1313,43 +1233,11 @@ html.dark-mode :deep(.st-exception-msg) {
   opacity: 0;
 }
 
-/* Icon Colors */
-.pi.os-icon-windows {
-  color: #0078d4;
-}
-.pi.os-icon-macintosh, .pi.os-icon-iphone, .pi.os-icon-ipad {
-  color: var(--text-color);
-}
-.pi.os-icon-android {
-  color: #3ddc84;
-}
-.pi.os-icon-linux {
-  color: #e95420;
-}
-.pi.browser-icon-chrome {
-  color: #4285f4;
-}
-.pi.browser-icon-firefox {
-  color: #ff7139;
-}
-.pi.browser-icon-safari {
-  color: #0070c9;
-}
-.pi.browser-icon-edge {
-  color: #0078d4;
-}
-.pi.browser-icon-opera {
-  color: #cc0f35;
-}
-.pi.browser-icon-bot {
-  color: var(--text-light);
-}
-
 .section-title {
   font-family: var(--font-mono);
   font-size: 0.85rem;
   font-weight: 700;
   margin: 1.5rem 0 0.5rem 0;
-  color: var(--text-color);
+  color: #1a1a2e;
 }
 </style>

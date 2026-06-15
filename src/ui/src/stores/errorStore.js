@@ -22,7 +22,7 @@ export const useErrorStore = defineStore('error', {
       application: ''
     },
     selectedIds: [],
-    autoRefreshInterval: 0, // 0 = off, otherwise in seconds
+    autoRefreshInterval: 0,
     refreshTimer: null,
     backendOnline: true,
     notifications: []
@@ -66,7 +66,7 @@ export const useErrorStore = defineStore('error', {
         if (res.success && res.data) {
           const newErrors = res.data.errors || [];
           
-          // Detect new errors since last load
+
           if (this.errors.length > 0) {
             const oldIds = new Set(this.errors.map(e => e.id));
             const newAdded = newErrors.filter(e => !oldIds.has(e.id));
@@ -101,7 +101,7 @@ export const useErrorStore = defineStore('error', {
 
     setFilter(key, value) {
       this.filters[key] = value;
-      this.pageIndex = 0; // Reset pagination on filter change
+      this.pageIndex = 0;
       this.fetchErrors();
       this.fetchCounts();
     },
@@ -212,7 +212,7 @@ export const useErrorStore = defineStore('error', {
         count
       });
 
-      // Auto dismiss after 6 seconds
+
       setTimeout(() => {
         this.removeNotification(id);
       }, 6000);

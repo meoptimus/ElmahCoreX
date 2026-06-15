@@ -46,25 +46,6 @@
       <div class="card settings-card">
         <h2 class="section-title"><i class="pi pi-sliders-h mr-1 text-primary"></i> UI Customization</h2>
         
-        <div class="form-group mb-3">
-          <label class="form-label">Active Theme Mode</label>
-          <div class="toggle-group">
-            <button 
-              class="toggle-btn" 
-              :class="{ 'active': !isDark }" 
-              @click="setTheme(false)"
-            >
-              <i class="pi pi-sun mr-1"></i> Light
-            </button>
-            <button 
-              class="toggle-btn" 
-              :class="{ 'active': isDark }" 
-              @click="setTheme(true)"
-            >
-              <i class="pi pi-moon mr-1"></i> Dark
-            </button>
-          </div>
-        </div>
 
         <div class="form-group mb-3">
           <label class="form-label">Default Rows Per Page</label>
@@ -121,7 +102,7 @@ const toast = useToast();
 const config = ref(null);
 const testing = ref(false);
 
-const isDark = ref(localStorage.getItem('theme') === 'dark');
+
 const defaultPageSize = ref(parseInt(localStorage.getItem('default_page_size') || '25', 10));
 const defaultRefresh = ref(parseInt(localStorage.getItem('auto_refresh') || '0', 10));
 
@@ -151,17 +132,6 @@ const testConnection = async () => {
   }
 };
 
-const setTheme = (dark) => {
-  isDark.value = dark;
-  localStorage.setItem('theme', dark ? 'dark' : 'light');
-  if (dark) {
-    document.documentElement.classList.add('dark-mode');
-  } else {
-    document.documentElement.classList.remove('dark-mode');
-  }
-  toast.add({ severity: 'info', summary: 'Theme Updated', detail: `Switched to ${dark ? 'Dark' : 'Light'} theme mode.`, life: 2000 });
-};
-
 const savePreferences = () => {
   localStorage.setItem('default_page_size', defaultPageSize.value.toString());
   localStorage.setItem('auto_refresh', defaultRefresh.value.toString());
@@ -181,20 +151,21 @@ onMounted(() => {
 .settings-view {
   display: flex;
   flex-direction: column;
+  padding: 16px 20px;
 }
 
 .settings-grid {
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1.5rem;
+  gap: 16px;
 }
 
 .card {
-  background-color: var(--panel-bg);
-  border: 1px solid var(--border-color);
-  border-radius: 12px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.05), 0 2px 4px -1px rgba(0, 0, 0, 0.03);
+  background-color: #ffffff;
+  border: 1px solid #e8e6e0;
+  border-radius: 0;
+  padding: 16px 20px;
+  box-shadow: none;
 }
 
 .col-span-2 {
@@ -208,77 +179,83 @@ onMounted(() => {
 }
 
 .section-title {
-  margin: 0 0 1.25rem 0;
-  font-size: 1.15rem;
-  font-weight: 700;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 0.5rem;
+  margin: 0 0 16px 0;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #aaa9a3;
+  font-weight: 600;
+  border-bottom: 1px solid #e8e6e0;
+  padding-bottom: 8px;
 }
 
 .text-primary {
-  color: var(--primary-color);
+  color: #4a7fc1;
 }
 
 .mb-3 {
-  margin-bottom: 1rem;
+  margin-bottom: 12px;
 }
 
 .mb-2 {
-  margin-bottom: 0.5rem;
+  margin-bottom: 8px;
 }
 
 .mt-4 {
-  margin-top: 1.5rem;
+  margin-top: 16px;
 }
 
-.mr-1 {
-  margin-right: 0.25rem;
-}
 
-.mr-2 {
-  margin-right: 0.5rem;
-}
 
 .font-mono {
-  font-family: SFMono-Regular, Consolas, Monaco, monospace;
+  font-family: var(--font-mono), monospace;
+  color: #1a1a2e;
 }
 
 .font-bold {
-  font-weight: 700;
+  font-weight: 500;
+  color: #1a1a2e;
 }
 
 /* Info List */
 .info-list {
   display: flex;
   flex-direction: column;
-  gap: 1rem;
+  gap: 0;
 }
 
 .info-row {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  font-size: 0.9rem;
-  border-bottom: 1px solid var(--border-color);
-  padding-bottom: 0.5rem;
+  font-size: 13px;
+  border-bottom: 1px solid #e8e6e0;
+  padding: 10px 0;
+}
+
+.info-row:last-child {
+  border-bottom: none;
 }
 
 .info-row.flex-col {
   flex-direction: column;
   align-items: flex-start;
-  border-bottom: none;
 }
 
 .label {
-  color: var(--text-light);
+  color: #aaa9a3;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   font-weight: 500;
 }
 
 .value {
-  color: var(--text-color);
+  color: #1a1a2e;
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 8px;
+  font-size: 13px;
 }
 
 .status-indicator {
@@ -288,13 +265,11 @@ onMounted(() => {
 }
 
 .status-indicator.online {
-  background-color: var(--success-color);
-  box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.2);
+  background-color: #10b981;
 }
 
 .status-indicator.offline {
-  background-color: var(--error-color);
-  box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.2);
+  background-color: #d94f4f;
 }
 
 .paths-list {
@@ -303,102 +278,107 @@ onMounted(() => {
   margin: 0;
   display: flex;
   flex-direction: column;
-  gap: 0.25rem;
+  gap: 4px;
   width: 100%;
 }
 
 .paths-list li {
-  background-color: var(--bg-color);
-  border: 1px solid var(--border-color);
+  background-color: #eeecea;
+  border: 1px solid #dddbd4;
   border-radius: 4px;
-  padding: 0.4rem 0.6rem;
-  font-size: 0.8rem;
+  padding: 6px 10px;
+  font-size: 11px;
   word-break: break-all;
+  color: #5f5e5a;
 }
 
 /* Form Styling */
 .form-group {
   display: flex;
   flex-direction: column;
-  gap: 0.5rem;
+  gap: 8px;
 }
 
 .form-label {
-  font-size: 0.85rem;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
   font-weight: 600;
-  color: var(--text-light);
+  color: #aaa9a3;
 }
 
 .form-select {
-  padding: 0.5rem;
-  border-radius: 8px;
-  border: 1px solid var(--border-color);
-  background-color: var(--panel-bg);
-  color: var(--text-color);
+  padding: 8px;
+  border-radius: 4px;
+  border: 1px solid #dddbd4;
+  background-color: #ffffff;
+  color: #1a1a2e;
   outline: none;
-  font-size: 0.9rem;
+  font-size: 13px;
+  font-family: var(--font-sans);
 }
 
 .form-select:focus {
-  border-color: var(--primary-color);
+  border-color: #4a7fc1;
 }
 
 /* Theme Toggle button */
 .toggle-group {
   display: flex;
-  background-color: var(--bg-color);
-  border: 1px solid var(--border-color);
-  padding: 0.25rem;
-  border-radius: 8px;
+  background-color: #eeecea;
+  border: 1px solid #dddbd4;
+  padding: 4px;
+  border-radius: 4px;
   width: fit-content;
 }
 
 .toggle-btn {
   background: none;
   border: none;
-  padding: 0.4rem 0.8rem;
-  border-radius: 6px;
-  font-size: 0.85rem;
-  font-weight: 600;
-  color: var(--text-light);
+  padding: 6px 12px;
+  border-radius: 3px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #888780;
   cursor: pointer;
   display: flex;
   align-items: center;
   transition: all 0.15s;
+  font-family: var(--font-sans);
 }
 
 .toggle-btn:hover {
-  color: var(--text-color);
+  color: #1a1a2e;
 }
 
 .toggle-btn.active {
-  background-color: var(--panel-bg);
-  color: var(--primary-color);
-  box-shadow: 0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06);
+  background-color: #ffffff;
+  color: #1a1a2e;
+  border: 1px solid #dddbd4;
 }
 
 /* Buttons */
 .btn {
-  padding: 0.5rem 1rem;
-  border-radius: 8px;
-  font-weight: 600;
-  font-size: 0.875rem;
+  padding: 8px 16px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 12px;
   cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  border: 1px solid transparent;
+  border: 1px solid #dddbd4;
   transition: all 0.2s;
+  font-family: var(--font-sans);
 }
 
 .btn-secondary {
-  background-color: var(--panel-bg);
-  border-color: var(--border-color);
-  color: var(--text-color);
+  background-color: #ffffff;
+  color: #5f5e5a;
 }
 
 .btn-secondary:hover {
-  background-color: var(--bg-color);
+  background-color: #eeecea;
 }
 
 .btn-secondary:disabled {
@@ -408,23 +388,23 @@ onMounted(() => {
 
 /* About Section */
 .about-text {
-  font-size: 0.9rem;
-  line-height: 1.6;
-  color: var(--text-color);
+  font-size: 13px;
+  line-height: 1.5;
+  color: #1a1a2e;
   margin-top: 0;
-  margin-bottom: 1.5rem;
+  margin-bottom: 16px;
 }
 
 .links-row {
   display: flex;
-  gap: 1.5rem;
+  gap: 16px;
 }
 
 .project-link {
-  color: var(--primary-color);
+  color: #4a7fc1;
   text-decoration: none;
-  font-size: 0.9rem;
-  font-weight: 600;
+  font-size: 13px;
+  font-weight: 500;
   display: inline-flex;
   align-items: center;
 }

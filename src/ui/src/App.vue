@@ -1,5 +1,5 @@
 <template>
-  <div class="app-container" :class="{ 'dark-mode': isDarkMode }">
+  <div class="app-container">
     <!-- Offline Banner -->
     <div v-if="!store.backendOnline" class="offline-banner">
       <i class="pi pi-exclamation-triangle mr-2"></i>
@@ -18,12 +18,6 @@
               <router-link to="/" class="nav-item" active-class="active" title="View Error Logs">
                 Errors
               </router-link>
-              <a :href="`${cleanRoot}/rss`" target="_blank" class="nav-item" title="RSS Feeds">
-                RSS
-              </a>
-              <a :href="`${cleanRoot}/digestrss`" target="_blank" class="nav-item" title="RSS Digest">
-                Digest
-              </a>
               <a :href="`${cleanRoot}/download`" target="_blank" class="nav-item" title="Download Log">
                 Download
               </a>
@@ -65,10 +59,7 @@
               <i class="pi pi-refresh" :class="{ 'pi-spin': store.loading }"></i>
             </button>
 
-            <!-- Dark Mode Toggle -->
-            <button class="icon-btn" title="Toggle Dark/Light Mode" @click="toggleDarkMode">
-              <i :class="isDarkMode ? 'pi pi-sun' : 'pi pi-moon'"></i>
-            </button>
+
 
             <span class="version-tag">v3.0.0</span>
           </div>
@@ -162,28 +153,12 @@ const elmahRoot = window.$elmah_root || '/elmah';
 const cleanRoot = '/' + elmahRoot.replace(/^\/|\/$/g, '');
 const showAboutModal = ref(false);
 
-const isDarkMode = ref(localStorage.getItem('theme') === 'dark');
-
 const envType = computed(() => {
   const host = window.location.hostname;
   if (host === 'localhost' || host === '127.0.0.1') return 'development';
   if (host.includes('staging') || host.includes('test')) return 'staging';
   return 'production';
 });
-
-const toggleDarkMode = () => {
-  isDarkMode.value = !isDarkMode.value;
-  localStorage.setItem('theme', isDarkMode.value ? 'dark' : 'light');
-  updateThemeClass();
-};
-
-const updateThemeClass = () => {
-  if (isDarkMode.value) {
-    document.documentElement.classList.add('dark-mode');
-  } else {
-    document.documentElement.classList.remove('dark-mode');
-  }
-};
 
 const changeAutoRefresh = (event) => {
   const val = parseInt(event.target.value, 10);
@@ -196,7 +171,7 @@ const refreshCurrent = () => {
   store.fetchCounts();
 };
 
-// Keyboard Shortcuts Listener
+
 const handleKeyDown = (e) => {
   if (e.key === 'r' || e.key === 'R') {
     if (document.activeElement.tagName !== 'INPUT' && document.activeElement.tagName !== 'SELECT' && document.activeElement.tagName !== 'TEXTAREA') {
@@ -206,7 +181,6 @@ const handleKeyDown = (e) => {
 };
 
 onMounted(() => {
-  updateThemeClass();
   const savedInterval = parseInt(localStorage.getItem('auto_refresh') || '0', 10);
   store.startAutoRefresh(savedInterval);
   store.fetchCounts();
@@ -223,41 +197,36 @@ onUnmounted(() => {
 :root {
   --font-family: 'Inter', system-ui, sans-serif;
   --font-mono: 'IBM Plex Mono', monospace;
-  --bg-color: #fafbfc;
+  --bg-color: #f7f6f2;
   --panel-bg: #ffffff;
-  --border-color: #e1e4e8;
-  --text-color: #1b1f23;
-  --text-light: #586069;
-  --primary-color: #005cc5;
-  --primary-hover: #0366d6;
-  --success-color: #28a745;
-  --warning-color: #e36209;
-  --error-color: #d73a49;
-  --env-dev-bg: #dbeafe;
-  --env-dev-text: #1e40af;
-  --env-stg-bg: #fef3c7;
-  --env-stg-text: #92400e;
-  --env-prd-bg: #fee2e2;
-  --env-prd-text: #991b1b;
+  --border-color: #e8e6e0;
+  --text-color: #1a1a2e;
+  --text-light: #aaa9a3;
+  --primary-color: #4a7fc1;
+  --primary-hover: #3b6ba5;
+  --success-color: #10b981;
+  --warning-color: #f59e0b;
+  --error-color: #d94f4f;
+  --env-dev-bg: #e3edf8;
+  --env-dev-text: #2b5fa0;
+  --env-stg-bg: #eeecea;
+  --env-stg-text: #5f5e5a;
+  --env-prd-bg: #fdf2ef;
+  --env-prd-text: #b05a4a;
 }
 
 html.dark-mode {
-  --bg-color: #0f1117;
-  --panel-bg: #161b27;
-  --border-color: #252d3d;
-  --text-color: #e8eaf0;
-  --text-light: #6b7a99;
-  --primary-color: #4a90e2;
-  --primary-hover: #357abd;
-  --success-color: #2ed573;
+  /* Using same palette for dark mode since prompt implies strict color rules */
+  --bg-color: #f7f6f2;
+  --panel-bg: #ffffff;
+  --border-color: #e8e6e0;
+  --text-color: #1a1a2e;
+  --text-light: #aaa9a3;
+  --primary-color: #4a7fc1;
+  --primary-hover: #3b6ba5;
+  --success-color: #10b981;
   --warning-color: #f59e0b;
-  --error-color: #ff4757;
-  --env-dev-bg: #1e3a8a;
-  --env-dev-text: #93c5fd;
-  --env-stg-bg: #78350f;
-  --env-stg-text: #fde68a;
-  --env-prd-bg: #7f1d1d;
-  --env-prd-text: #fca5a5;
+  --error-color: #d94f4f;
 }
 
 * {
@@ -272,6 +241,17 @@ body {
   color: var(--text-color);
   transition: background-color 0.2s, color 0.2s;
   overflow: hidden;
+}
+
+
+
+/* Global utility classes */
+.mr-1 {
+  margin-right: 4px !important;
+}
+
+.mr-2 {
+  margin-right: 8px !important;
 }
 
 /* Global App Layout */
@@ -311,8 +291,8 @@ body {
 
 .main-header {
   height: 48px;
-  background-color: var(--panel-bg);
-  border-bottom: 1px solid var(--border-color);
+  background-color: #1a1a2e;
+  border-bottom: 1px solid #e8e6e0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -329,7 +309,7 @@ body {
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 1.15rem;
-  color: var(--text-color);
+  color: #e8eaf0;
   text-transform: uppercase;
   letter-spacing: 0.05em;
 }
@@ -342,8 +322,8 @@ body {
 
 .total-errors-text {
   font-family: var(--font-mono);
-  font-size: 0.9rem;
-  color: var(--text-light);
+  font-size: 12px;
+  color: #6b7a99;
   font-weight: 500;
 }
 
@@ -357,10 +337,10 @@ body {
   display: flex;
   align-items: center;
   padding: 0.2rem 0;
-  color: var(--text-light);
+  color: #6b7a99 !important;
   text-decoration: none;
   font-weight: 600;
-  font-size: 0.85rem;
+  font-size: 12px;
   transition: all 0.15s;
   border-bottom: 2px solid transparent;
   border-radius: 0 !important;
@@ -369,13 +349,13 @@ body {
 
 .nav-item:hover {
   background: none !important;
-  color: var(--text-color);
+  color: #b0b8cc !important;
 }
 
 .nav-item.active {
   background: none !important;
-  color: var(--primary-color) !important;
-  border-bottom: 2px solid var(--primary-color);
+  color: #e8eaf0 !important;
+  border-bottom: 2px solid #4a7fc1;
 }
 
 .header-right {
@@ -386,12 +366,12 @@ body {
 
 .env-badge {
   padding: 0.2rem 0.5rem;
-  border-radius: 0 !important;
-  border: 1px solid var(--border-color);
+  border-radius: 3px !important;
+  border: 1px solid #2e3a52;
   background: transparent !important;
-  color: var(--text-light) !important;
+  color: #8b9bbf !important;
   font-family: var(--font-mono);
-  font-size: 0.75rem;
+  font-size: 11px;
   font-weight: 600;
   letter-spacing: 0.05em;
 }
@@ -400,17 +380,17 @@ body {
   display: flex;
   align-items: center;
   font-size: 0.85rem;
-  color: var(--text-light);
+  color: #6b7a99;
 }
 
 .refresh-control select {
   background: none;
   border: none;
-  color: var(--text-light);
-  font-family: var(--font-family);
+  color: #6b7a99;
+  font-family: var(--font-mono);
   font-weight: 600;
-  font-size: 0.85rem;
-  padding: 0.2rem 0.4rem;
+  font-size: 11px;
+  padding: 0.2rem 0;
   outline: none;
   cursor: pointer;
 }
@@ -418,10 +398,10 @@ body {
 .icon-btn {
   background: none;
   border: none;
-  color: var(--text-light);
+  color: #6b7a99;
   cursor: pointer;
   padding: 0.5rem;
-  border-radius: 0;
+  border-radius: 3px;
   font-size: 1.1rem;
   display: flex;
   align-items: center;
@@ -430,21 +410,27 @@ body {
 }
 
 .icon-btn:hover {
-  background-color: var(--border-color);
-  color: var(--text-color);
+  background-color: #2e3a52;
+  color: #e8eaf0;
+}
+
+.icon-btn i {
+  color: #6b7a99;
+  font-size: 15px !important;
 }
 
 .version-tag {
-  font-size: 0.75rem;
-  color: var(--text-light);
-  border-left: 1px solid var(--border-color);
+  font-size: 11px;
+  font-family: var(--font-mono);
+  color: #3d4d6a;
+  border-left: 1px solid #2e3a52;
   padding-left: 0.75rem;
 }
 
 .content-body {
   flex: 1;
   overflow: hidden;
-  padding: 0.5rem 0.75rem 0.1rem 0.75rem;
+  padding: 0;
   display: flex;
   flex-direction: column;
 }
@@ -595,10 +581,10 @@ body {
 
 .btn-primary {
   background-color: var(--primary-color);
-  color: white;
-  border: none;
+  color: #ffffff;
+  border: 1px solid #dddbd4;
   padding: 0.6rem 2rem;
-  border-radius: 0;
+  border-radius: 4px;
   font-weight: 600;
   cursor: pointer;
   transition: background-color 0.2s;
@@ -652,7 +638,7 @@ body {
 
 /* Severity borders */
 .toast-item.severity-info {
-  border-left-color: #3b82f6;
+  border-left-color: #4a7fc1;
 }
 .toast-item.severity-success {
   border-left-color: #10b981;
@@ -661,7 +647,7 @@ body {
   border-left-color: #f59e0b;
 }
 .toast-item.severity-error {
-  border-left-color: #ef4444;
+  border-left-color: #d94f4f;
 }
 
 .toast-icon {
@@ -673,7 +659,7 @@ body {
 }
 
 .toast-item.severity-error .toast-icon {
-  color: #ef4444;
+  color: #d94f4f;
 }
 .toast-item.severity-warning .toast-icon {
   color: #f59e0b;
