@@ -137,14 +137,14 @@ internal static class ErrorApiHandler
                         if (format == "csv")
                         {
                             context.Response.ContentType = "text/csv; charset=UTF-8";
-                            context.Response.Headers.Add("Content-Disposition", "attachment; filename=elmah-errors.csv");
+                            context.Response.Headers.Append("Content-Disposition", "attachment; filename=elmah-errors.csv");
                             var csv = ToCsv(wrapped);
                             await context.Response.WriteAsync(csv);
                         }
                         else
                         {
                             context.Response.ContentType = "application/json; charset=UTF-8";
-                            context.Response.Headers.Add("Content-Disposition", "attachment; filename=elmah-errors.json");
+                            context.Response.Headers.Append("Content-Disposition", "attachment; filename=elmah-errors.json");
                             var json = JsonSerializer.Serialize(new { success = true, data = wrapped, error = (string)null }, JsonSerializerHelper.DefaultJsonSerializerOptions);
                             await context.Response.WriteAsync(json);
                         }
