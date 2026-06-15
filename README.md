@@ -1,13 +1,13 @@
-![Build Status](https://github.com/elmahcoreex/elmahcoreex/actions/workflows/build.yml/badge.svg)
-![Latest Version](https://img.shields.io/nuget/v/elmahcoreex?style=flat-square)
-![Version Pre-release](https://img.shields.io/nuget/vpre/elmahcoreex?style=flat-square)
-![Last Commit](https://img.shields.io/github/last-commit/elmahcoreex/elmahcoreex?style=flat-square)
+![Build Status](https://github.com/meoptimus/ElmahCoreX/actions/workflows/build.yml/badge.svg)
+![Latest Version](https://img.shields.io/nuget/v/ElmahCoreX?style=flat-square)
+![Version Pre-release](https://img.shields.io/nuget/vpre/ElmahCoreX?style=flat-square)
+![Last Commit](https://img.shields.io/github/last-commit/meoptimus/ElmahCoreX?style=flat-square)
 
-![Code Quality](https://img.shields.io/codefactor/grade/github/elmahcoreex/elmahcoreex/develop?style=flat-square)
-![Dependencies](https://img.shields.io/librariesio/github/elmahcoreex/elmahcoreex?style=flat-square)
+![Code Quality](https://img.shields.io/codefactor/grade/github/meoptimus/ElmahCoreX/develop?style=flat-square)
+![Dependencies](https://img.shields.io/librariesio/github/meoptimus/ElmahCoreX?style=flat-square)
 
-![License](https://img.shields.io/github/license/elmahcoreex/elmahcoreex)
-![Contributors](https://img.shields.io/github/contributors/elmahcoreex/elmahcoreex?style=flat-square)
+![License](https://img.shields.io/github/license/meoptimus/ElmahCoreX)
+![Contributors](https://img.shields.io/github/contributors/meoptimus/ElmahCoreX?style=flat-square)
 
 # About
 
@@ -30,7 +30,7 @@ The front end has been completely rewritten in Vue 3 with a modern, minimalist d
 
 ELMAH for Net Core 10 
 
-Add NuGet package [ElmahCoreEx](https://www.nuget.org/packages?q=elmahcoreex)
+Add NuGet package [ElmahCoreX](https://www.nuget.org/packages?q=ElmahCoreX)
 
 ## Simple usage
 
