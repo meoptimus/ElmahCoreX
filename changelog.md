@@ -1,5 +1,18 @@
 # Release Notes
 
+## 2.2.7
+
+### Summary
+
+UI redesign and code cleanup.
+
+### Changes
+
+- Redesigned the error monitoring dashboard with a minimalist interface.
+- Removed dark mode and unnecessary comments.
+- Fixed compiler warnings (CS0618 and ASP0019).
+- Cleaned up git tracking for Vue compiled assets.
+
 ## 2.1.5
 
 ### Summary
