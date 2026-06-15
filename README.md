@@ -22,9 +22,9 @@ The interfaces and namespaces have been kept the same.
 
 This project is licensed under the terms of the Apache License 2.0.
 
-# Warnings & Dragons
+# Frontend UI
 
-The source code for the front end appears non-existent, in ElmahCore the front end Vue SPA files are all [minified](https://github.com/ElmahCore/ElmahCore/issues/77). Consider this a warning sign for the continuation of the front end without a rewrite WITH SOURCE. Source-maps may have enough content to obtain the code but this has not be investigated.
+The front end has been completely rewritten in Vue 3 with a modern, minimalist design. The source code for the SPA is fully available in the `src/ui` folder. It can be built via `npm install` and `npm run build` which will output the compiled assets to the `ElmahCore.Mvc/wwwroot` folder as embedded resources.
 
 # Using ElmahCore
 
