@@ -3,8 +3,6 @@
 ![Version Pre-release](https://img.shields.io/nuget/vpre/ElmahCoreX?style=flat-square)
 ![Last Commit](https://img.shields.io/github/last-commit/meoptimus/ElmahCoreX?style=flat-square)
 
-![Code Quality](https://img.shields.io/codefactor/grade/github/meoptimus/ElmahCoreX/develop?style=flat-square)
-![Dependencies](https://img.shields.io/librariesio/github/meoptimus/ElmahCoreX?style=flat-square)
 
 ![License](https://img.shields.io/github/license/meoptimus/ElmahCoreX)
 ![Contributors](https://img.shields.io/github/contributors/meoptimus/ElmahCoreX?style=flat-square)
