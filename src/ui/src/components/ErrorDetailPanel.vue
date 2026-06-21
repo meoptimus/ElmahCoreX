@@ -72,32 +72,32 @@
               {{ error?.statusCode || '500' }}
             </div>
             <div class="error-header-content">
-              <div class="error-title-group">
-                <h1 class="error-message-detail">{{ error.message }}</h1>
+              <h1 class="error-message-detail">{{ error.message }}</h1>
+              
+              <div class="exception-and-actions">
                 <div class="exception-type-detail">{{ error.type }}</div>
-              </div>
+                
+                <div class="action-buttons">
+                  <!-- Copy GUID -->
+                  <button class="btn-action btn-icon" @click="copyToClipboard(props.id, 'Error ID copied!')" title="Copy Error GUID">
+                    <i class="pi pi-copy"></i>
+                  </button>
 
-              <!-- Action row: nested inside to align under text -->
-              <div class="action-buttons">
-                <!-- Copy GUID -->
-                <button class="btn-action btn-icon" @click="copyToClipboard(props.id, 'Error ID copied!')" title="Copy Error GUID">
-                  <i class="pi pi-copy"></i>
-                </button>
+                  <!-- XML Link -->
+                  <button class="btn-action btn-text" @click="openXml" title="Open XML in new tab">
+                    xml
+                  </button>
 
-                <!-- XML Link -->
-                <button class="btn-action btn-text" @click="openXml" title="Open XML in new tab">
-                  xml
-                </button>
+                  <!-- JSON Link -->
+                  <button class="btn-action btn-text" @click="openJson" title="Open JSON in new tab">
+                    json
+                  </button>
 
-                <!-- JSON Link -->
-                <button class="btn-action btn-text" @click="openJson" title="Open JSON in new tab">
-                  json
-                </button>
-
-                <!-- External share link -->
-                <button class="btn-action btn-icon" @click="shareLink" title="Copy shareable link">
-                  <i class="pi pi-external-link"></i>
-                </button>
+                  <!-- External share link -->
+                  <button class="btn-action btn-icon" @click="shareLink" title="Copy shareable link">
+                    <i class="pi pi-external-link"></i>
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -882,7 +882,7 @@ watch(() => props.id, (newId) => {
 .error-header-content {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 8px;
   flex: 1;
 }
 
@@ -913,12 +913,6 @@ watch(() => props.id, (newId) => {
   background-color: #10b981;
 }
 
-.error-title-group {
-  display: flex;
-  flex-direction: column;
-  gap: 4px;
-}
-
 .error-message-detail {
   font-size: 15px;
   font-weight: 500;
@@ -927,11 +921,18 @@ watch(() => props.id, (newId) => {
   margin: 0;
 }
 
+.exception-and-actions {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 12px;
+}
+
 .exception-type-detail {
   color: #00a2ed;
   font-size: 11px;
-  margin-top: 2px;
   font-weight: 500;
+  margin-top: 0;
 }
 
 .action-buttons {
