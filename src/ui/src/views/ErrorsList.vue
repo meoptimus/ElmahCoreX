@@ -1,5 +1,5 @@
 <template>
-  <div class="errors-list-view">
+  <div class="errors-list-view" :class="{ 'has-selection': selectedErrorId }">
     <div class="split-container">
       <!-- Left side: List pane (fixed 300px) -->
       <div class="list-pane">
@@ -938,32 +938,30 @@ onMounted(() => {
 }
 
 /* Responsive Overrides */
-@media (max-width: 1024px) {
-  .split-container {
-    flex-direction: column;
-    height: auto;
-    overflow: visible;
-  }
-
+@media (max-width: 768px) {
   .list-pane {
-    width: 100%;
-    flex: none;
-    height: auto;
-    overflow: visible;
-  }
-
-  .error-rows-list {
-    overflow: visible;
-    height: auto;
-    flex: none;
+    flex: 1 0 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   .details-pane {
-    width: 100%;
-    flex: none;
-    height: auto;
-    border-left: none;
-    border-top: 1px solid #e8e6e0;
+    flex: 1 0 100% !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    display: none !important;
   }
+
+  .details-pane.active {
+    display: flex !important;
+  }
+
+  .errors-list-view.has-selection .list-pane {
+    display: none !important;
+  }
+}
+
+.error-rows-list {
+  -webkit-overflow-scrolling: touch;
 }
 </style>

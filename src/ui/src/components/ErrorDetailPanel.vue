@@ -3,6 +3,10 @@
     <!-- Panel Header with Navigation and Close Button -->
     <div class="panel-header mb-4">
       <div class="header-left">
+        <button class="btn-back-mobile" @click="emit('close')" title="Back to list">
+          <i class="pi pi-arrow-left"></i>
+          <span>Back</span>
+        </button>
         <span class="header-title-label font-mono">Error Details</span>
       </div>
 
@@ -15,7 +19,7 @@
           :title="error.isReviewed ? 'Mark as Open' : 'Mark as Reviewed'"
         >
           <i :class="error.isReviewed ? 'pi pi-check-circle text-success' : 'pi pi-circle'"></i>
-          <span class="ml-1">{{ error.isReviewed ? 'Reviewed' : 'Review' }}</span>
+          <span class="btn-reviewed-text ml-1">{{ error.isReviewed ? 'Reviewed' : 'Review' }}</span>
         </button>
 
         <!-- Delete -->
@@ -1519,5 +1523,79 @@ watch(() => props.id, (newId) => {
   font-weight: 700;
   margin: 1.5rem 0 0.5rem 0;
   color: #1a1a2e;
+}
+
+.detail-content-wrapper,
+.tab-content,
+.stacktrace-container,
+.xml-raw,
+.sql-text {
+  -webkit-overflow-scrolling: touch;
+}
+
+.text-break {
+  word-break: break-all !important;
+  word-wrap: break-word !important;
+  overflow-wrap: break-word !important;
+}
+
+.btn-back-mobile {
+  display: none;
+  align-items: center;
+  gap: 6px;
+  background: none;
+  border: none;
+  color: #00a2ed;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 4px 8px 4px 0;
+}
+
+.btn-back-mobile i {
+  font-size: 14px;
+}
+
+@media (max-width: 768px) {
+  .btn-back-mobile {
+    display: inline-flex;
+  }
+
+  .header-title-label {
+    display: none;
+  }
+
+  .btn-close-x {
+    display: none;
+  }
+
+  .nav-position-text {
+    display: none;
+  }
+
+  .btn-reviewed-text {
+    display: none;
+  }
+
+  .detail-nav-buttons {
+    margin-right: 0 !important;
+    gap: 4px;
+  }
+
+  .metadata-card {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 16px;
+  }
+
+  .device-badges {
+    flex-direction: row;
+    justify-content: center;
+    border-left: none;
+    border-top: 1px solid rgba(0, 162, 237, 0.15);
+    padding-left: 0;
+    padding-top: 16px;
+    gap: 24px;
+  }
 }
 </style>
