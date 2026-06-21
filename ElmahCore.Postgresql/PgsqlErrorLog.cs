@@ -440,7 +440,7 @@ CREATE INDEX IF NOT EXISTS IX_ELMAH_Error_Filtered ON ELMAH_Error (TimeUtc DESC,
         }
         if (filter.Message != null)
         {
-            sql += " AND Message ILIKE @Message";
+            sql += " AND (Message ILIKE @Message OR \"User\" ILIKE @Message OR AllXml ILIKE @Message)";
             parameters.Add(new NpgsqlParameter("Message", "%" + filter.Message + "%"));
         }
         if (filter.Host != null)

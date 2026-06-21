@@ -206,6 +206,9 @@ public static class ErrorXml
         WriteXmlAttribute(writer, "source", error.Source);
         WriteXmlAttribute(writer, "detail", error.Detail);
         WriteXmlAttribute(writer, "user", error.User);
+        var path = error.ServerVariables["PathBase"] + error.ServerVariables["Path"];
+        if (!string.IsNullOrEmpty(path))
+            WriteXmlAttribute(writer, "path", path);
         if (error.Time != DateTime.MinValue)
             WriteXmlAttribute(writer, "time",
                 XmlConvert.ToString(error.Time.ToUniversalTime(), @"yyyy-MM-dd\THH:mm:ss.fffffff\Z"));

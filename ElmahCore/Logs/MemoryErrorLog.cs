@@ -320,8 +320,17 @@ public sealed class MemoryErrorLog : ErrorLog
                     continue;
                 if (filter.Type != null && !error.Type.Contains(filter.Type, StringComparison.OrdinalIgnoreCase))
                     continue;
-                if (filter.Message != null && !error.Message.Contains(filter.Message, StringComparison.OrdinalIgnoreCase))
-                    continue;
+                if (filter.Message != null)
+                {
+                    var msg = filter.Message;
+                    var path = (error.ServerVariables["PathBase"] ?? "") + (error.ServerVariables["Path"] ?? "");
+                    var matchesMessage = error.Message.Contains(msg, StringComparison.OrdinalIgnoreCase);
+                    var matchesUser = error.User.Contains(msg, StringComparison.OrdinalIgnoreCase);
+                    var matchesUrl = path.Contains(msg, StringComparison.OrdinalIgnoreCase);
+
+                    if (!matchesMessage && !matchesUser && !matchesUrl)
+                        continue;
+                }
                 if (filter.User != null && !error.User.Contains(filter.User, StringComparison.OrdinalIgnoreCase))
                     continue;
                 if (filter.StatusCode.HasValue && error.StatusCode != filter.StatusCode.Value)

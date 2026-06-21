@@ -1,5 +1,18 @@
 # Release Notes
 
+## 2.2.8
+
+### Summary
+
+UI enhancements and dashboard layout refinements.
+
+### Changes
+
+- Nested action buttons and error messages into a clean two-row stacked layout in the detail panel.
+- Increased list pane width to 380px and removed JavaScript-level message truncation to maximize visible information.
+- Updated list pane typography to use high contrast dark black colors.
+- Integrated official Tux vector SVG for Linux in system badges.
+
 ## 2.2.7
 
 ### Summary

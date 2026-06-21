@@ -338,7 +338,7 @@ public class MySqlErrorLog : ErrorLog
         }
         if (filter.Message != null)
         {
-            sql += " AND Message LIKE @Message";
+            sql += " AND (Message LIKE @Message OR User LIKE @Message OR AllXml LIKE @Message)";
             parameters.Add(new MySqlParameter("Message", "%" + filter.Message + "%"));
         }
         if (filter.Host != null)

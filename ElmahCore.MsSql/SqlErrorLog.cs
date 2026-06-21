@@ -423,7 +423,7 @@ BEGIN
     SELECT COUNT(*) FROM [{schemaName}].[{tableName}]
     WHERE Application = @App
       AND (@Type IS NULL OR Type LIKE '%' + @Type + '%')
-      AND (@Message IS NULL OR Message LIKE '%' + @Message + '%')
+      AND (@Message IS NULL OR Message LIKE '%' + @Message + '%' OR [User] LIKE '%' + @Message + '%' OR AllXml LIKE '%' + @Message + '%')
       AND (@Host IS NULL OR Host LIKE '%' + @Host + '%')
       AND (@User IS NULL OR [User] LIKE '%' + @User + '%')
       AND (@StatusCode IS NULL OR StatusCode = @StatusCode)
@@ -520,7 +520,7 @@ GO";
 SELECT ErrorId, AllXml, IsReviewed FROM [{DatabaseSchemaName}].[{DatabaseTableName}]
 WHERE Application = @Application
   AND (@Type IS NULL OR Type LIKE '%' + @Type + '%')
-  AND (@Message IS NULL OR Message LIKE '%' + @Message + '%')
+  AND (@Message IS NULL OR Message LIKE '%' + @Message + '%' OR [User] LIKE '%' + @Message + '%' OR AllXml LIKE '%' + @Message + '%')
   AND (@Host IS NULL OR Host LIKE '%' + @Host + '%')
   AND (@User IS NULL OR [User] LIKE '%' + @User + '%')
   AND (@StatusCode IS NULL OR StatusCode = @StatusCode)

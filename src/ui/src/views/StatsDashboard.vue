@@ -22,11 +22,11 @@
           <span class="metric-label">Unique Exception Types</span>
           <span class="metric-value">{{ uniqueTypesCount }}</span>
         </div>
-        <div class="metric-card card">
+        <div class="metric-card card clickable-card" @click="filterByUnreviewed">
           <span class="metric-label">Unreviewed Errors</span>
           <span class="metric-value text-danger">{{ unreviewedCount }}</span>
         </div>
-        <div class="metric-card card">
+        <div class="metric-card card clickable-card" @click="filterByType(topExceptionName)">
           <span class="metric-label">Most Common Exception</span>
           <span class="metric-value text-primary truncate-text" :title="topExceptionName">
             {{ topExceptionNameShort }}
@@ -67,7 +67,7 @@
         <div class="list-card card">
           <h3 class="list-title"><i class="pi pi-link mr-1"></i> Top 5 Affected URLs</h3>
           <ul class="stats-list">
-            <li v-for="(item, idx) in topUrls" :key="idx">
+            <li v-for="(item, idx) in topUrls" :key="idx" class="clickable-item" @click="filterByUrl(item.name)">
               <span class="list-index">{{ idx + 1 }}</span>
               <div class="list-content">
                 <span class="list-name font-mono text-break" :title="item.name">{{ item.name || 'N/A' }}</span>
@@ -81,7 +81,7 @@
         <div class="list-card card">
           <h3 class="list-title"><i class="pi pi-users mr-1"></i> Top 5 Impacted Users</h3>
           <ul class="stats-list" v-if="topUsers.length > 0">
-            <li v-for="(item, idx) in topUsers" :key="idx">
+            <li v-for="(item, idx) in topUsers" :key="idx" class="clickable-item" @click="filterByUser(item.name)">
               <span class="list-index">{{ idx + 1 }}</span>
               <div class="list-content">
                 <span class="list-name font-bold">{{ item.name || 'Anonymous' }}</span>
@@ -100,9 +100,14 @@
 
 <script setup>
 import { ref, computed, onMounted, nextTick } from 'vue';
+import { useRouter } from 'vue-router';
+import { useErrorStore } from '../stores/errorStore';
 import { elmahApi } from '../api/elmahApi';
 import Chart from 'chart.js/auto';
 import dayjs from 'dayjs';
+
+const store = useErrorStore();
+const router = useRouter();
 
 const errors = ref([]);
 const loading = ref(true);
@@ -118,9 +123,36 @@ let typeChart = null;
 let statusChart = null;
 
 
+const filterByUrl = (url) => {
+  if (!url || url === 'N/A') return;
+  store.clearFilters();
+  store.setFilter('message', url);
+  router.push('/');
+};
+
+const filterByUser = (user) => {
+  if (!user || user === 'Anonymous') return;
+  store.clearFilters();
+  store.setFilter('message', user);
+  router.push('/');
+};
+
+const filterByUnreviewed = () => {
+  store.clearFilters();
+  store.setFilter('isReviewed', 'false');
+  router.push('/');
+};
+
+const filterByType = (type) => {
+  if (!type || type === 'None') return;
+  store.clearFilters();
+  store.setFilter('type', type);
+  router.push('/');
+};
+
 const uniqueTypesCount = computed(() => {
-  const types = errors.value.map(e => e.error.type);
-  return new Set(types).size;
+  const types = new Set(errors.value.map(e => e.error.type));
+  return types.size;
 });
 
 const unreviewedCount = computed(() => {
@@ -538,5 +570,20 @@ onMounted(() => {
   padding: 32px;
   color: #888780;
   font-size: 13px;
+}
+
+.clickable-card,
+.clickable-item {
+  cursor: pointer;
+  transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.clickable-card:hover {
+  background-color: #eeecea;
+  border-color: #aaa9a3;
+}
+
+.clickable-item:hover {
+  background-color: #eeecea;
 }
 </style>

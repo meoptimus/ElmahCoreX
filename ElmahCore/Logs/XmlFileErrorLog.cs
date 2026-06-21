@@ -306,12 +306,21 @@ public class XmlFileErrorLog : ErrorLog
             if (filter.Type != null && (type == null || !type.Contains(filter.Type, StringComparison.OrdinalIgnoreCase)))
                 return false;
 
-            var message = reader.GetAttribute("message");
-            if (filter.Message != null && (message == null || !message.Contains(filter.Message, StringComparison.OrdinalIgnoreCase)))
-                return false;
+            var message = (reader.GetAttribute("message") ?? reader.GetAttribute("Message")) ?? string.Empty;
+            var userAttr = reader.GetAttribute("user") ?? reader.GetAttribute("User");
+            var resolvedUser = userAttr ?? Environment.GetEnvironmentVariable("USERDOMAIN") ?? Environment.GetEnvironmentVariable("USERNAME") ?? string.Empty;
+            var xmlPath = (reader.GetAttribute("path") ?? reader.GetAttribute("Path")) ?? string.Empty;
 
-            var user = reader.GetAttribute("user");
-            if (filter.User != null && (user == null || !user.Contains(filter.User, StringComparison.OrdinalIgnoreCase)))
+            if (filter.Message != null)
+            {
+                var matchesMsg = message.Contains(filter.Message, StringComparison.OrdinalIgnoreCase);
+                var matchesUser = resolvedUser.Contains(filter.Message, StringComparison.OrdinalIgnoreCase);
+                var matchesPath = xmlPath.Contains(filter.Message, StringComparison.OrdinalIgnoreCase);
+                if (!matchesMsg && !matchesUser && !matchesPath)
+                    return false;
+            }
+
+            if (filter.User != null && !resolvedUser.Contains(filter.User, StringComparison.OrdinalIgnoreCase))
                 return false;
 
             var statusCodeString = reader.GetAttribute("statusCode") ?? string.Empty;

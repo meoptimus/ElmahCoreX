@@ -129,6 +129,11 @@
 
         <!-- Error Logs List Container -->
         <div class="error-list-container">
+          <!-- Loading Overlay -->
+          <div v-if="store.loading && !loadingMore && store.errors.length > 0" class="list-loading-overlay">
+            <i class="pi pi-spin pi-spinner list-loading-spinner"></i>
+          </div>
+
           <div v-if="store.loading && store.errors.length === 0" class="skeleton-container">
             <div v-for="i in 5" :key="i" class="skeleton-row"></div>
           </div>
@@ -151,28 +156,29 @@
               }"
               @click="viewDetails(entry.id)"
             >
-              <div class="item-header">
-                <div class="item-left">
-                  <input 
-                    type="checkbox" 
-                    :value="entry.id"
-                    v-model="store.selectedIds"
-                    @click.stop
-                    class="item-checkbox"
-                  />
-                  <span class="status-badge" :class="[getSeverityClass(entry.error.statusCode, entry.error.severity), 'status-' + entry.error.statusCode]">
-                    {{ entry.error.statusCode || '500' }}
-                  </span>
-                  <span class="error-type-title">{{ getShortTypeName(entry.error.type) }}</span>
-                </div>
-                <div class="item-right">
-                  <span class="error-time-subtle">{{ formatTimeFriendly(entry.error.time) }}</span>
-                </div>
+              <div class="item-checkbox-container">
+                <input 
+                  type="checkbox" 
+                  :value="entry.id"
+                  v-model="store.selectedIds"
+                  @click.stop
+                  class="item-checkbox"
+                />
               </div>
-
-              <div class="item-body">
+              <div class="item-left-col">
+                <span class="status-badge-circle" :class="[getSeverityClass(entry.error.statusCode, entry.error.severity), 'status-' + entry.error.statusCode]">
+                  {{ entry.error.statusCode || '500' }}
+                </span>
+                <span class="error-time-relative" :title="formatTimeFriendly(entry.error.time)">{{ formatTimeRelative(entry.error.time) }}</span>
+              </div>
+              <div class="item-right-col">
+                <div class="error-type-title">{{ getShortTypeName(entry.error.type) }}</div>
+                <div class="error-url-row" v-if="entry.error.url">
+                  <span class="method-badge" :class="entry.error.method">{{ entry.error.method || 'GET' }}</span>
+                  <span class="url-text font-mono" :title="entry.error.url">{{ entry.error.url }}</span>
+                </div>
                 <div class="error-message-text" :title="entry.error.message">
-                  {{ truncate(entry.error.message, 120) }}
+                  {{ entry.error.message }}
                 </div>
               </div>
             </div>
@@ -180,8 +186,13 @@
 
           <!-- Infinite Scroll Pager Status Footer -->
           <div v-if="store.errors.length > 0" class="infinite-scroll-footer">
-            Loaded {{ store.errors.length }} of {{ store.totalCount }}
-            <span v-if="store.errors.length >= store.totalCount"> — All loaded</span>
+            <template v-if="loadingMore">
+              <i class="pi pi-spin pi-spinner mr-1"></i> Loading more...
+            </template>
+            <template v-else>
+              Loaded {{ store.errors.length }} of {{ store.totalCount }}
+              <span v-if="store.errors.length >= store.totalCount"> — All loaded</span>
+            </template>
           </div>
         </div>
       </div>
@@ -209,7 +220,15 @@ import { useRouter } from 'vue-router';
 import { useErrorStore } from '../stores/errorStore';
 import { useToast } from 'primevue/usetoast';
 import dayjs from 'dayjs';
+import relativeTime from 'dayjs/plugin/relativeTime';
 import ErrorDetailPanel from '../components/ErrorDetailPanel.vue';
+
+dayjs.extend(relativeTime);
+
+const formatTimeRelative = (time) => {
+  if (!time) return '';
+  return dayjs(time).fromNow(true);
+};
 
 const props = defineProps({
   id: {
@@ -381,7 +400,12 @@ watch(() => store.errors, (newErrors) => {
   }
 }, { deep: true });
 
+watch(() => store.filters.message, (newMsg) => {
+  searchTerm.value = newMsg || '';
+});
+
 onMounted(() => {
+  searchTerm.value = store.filters.message || '';
   loadInitial();
 });
 </script>
@@ -405,8 +429,8 @@ onMounted(() => {
 }
 
 .list-pane {
-  flex: 0 0 300px;
-  width: 300px;
+  flex: 0 0 380px;
+  width: 380px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -655,6 +679,25 @@ onMounted(() => {
   flex: 1;
   min-height: 0;
   overflow: hidden;
+  position: relative;
+}
+
+.list-loading-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(247, 246, 242, 0.6);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 10;
+}
+
+.list-loading-spinner {
+  font-size: 1.5rem;
+  color: #4a7fc1;
 }
 
 .error-rows-list {
@@ -668,85 +711,157 @@ onMounted(() => {
 /* Error List Item Row */
 .error-list-item {
   display: flex;
-  flex-direction: column;
-  padding: 10px 12px;
+  align-items: flex-start;
+  padding: 12px 10px;
   border-bottom: 1px solid #e8e6e0;
-  border-left: 2px solid transparent;
+  border-left: 3px solid transparent;
   cursor: pointer;
   transition: background-color 150ms ease, border-left-color 150ms ease;
   background-color: transparent;
-  border-radius: 0 !important; /* NO border-radius on list rows */
+  gap: 8px;
+  border-radius: 0 !important;
 }
 
 .error-list-item:hover {
-  background-color: #eeecea; /* Hover background */
+  background-color: #eeecea;
 }
 
 .error-list-item.active-item {
-  background-color: #ffffff !important; /* Active background */
-  border-left: 2px solid #4a7fc1 !important; /* Active left border accent */
+  background-color: #ffffff !important;
+  border-left: 3px solid #4a7fc1 !important;
 }
 
 .error-list-item.reviewed-item {
   opacity: 0.55;
 }
 
-.item-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 0.35rem;
-  margin-bottom: 0.25rem;
-}
-
-.item-left {
+.item-checkbox-container {
   display: flex;
   align-items: center;
-  gap: 0.4rem;
-  min-width: 0;
+  justify-content: center;
+  padding-top: 10px;
+  flex-shrink: 0;
 }
 
-.status-badge {
+.item-checkbox {
+  cursor: pointer;
+  accent-color: #4a7fc1;
+  width: 13px;
+  height: 13px;
+  border-radius: 3px;
+  border: 1px solid #dddbd4;
+}
+
+.item-left-col {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  flex-shrink: 0;
+  width: 46px;
+}
+
+.status-badge-circle {
   font-family: var(--font-mono);
   font-weight: 700;
   font-size: 10px;
-  padding: 1px 4px;
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
   color: white;
-  min-width: 28px;
-  text-align: center;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   white-space: nowrap;
-  background-color: #aaa9a3; /* neutral stone gray for non-500 codes */
-  border-radius: 3px; /* 3-5px max */
+  background-color: #aaa9a3; /* fallback */
+  flex-shrink: 0;
 }
 
-.status-badge.error,
-.status-badge.status-500 {
-  background-color: #d94f4f !important; /* HTTP 500 badge ONLY */
+.status-badge-circle.error,
+.status-badge-circle.status-500 {
+  background-color: #d94f4f !important; /* HTTP 500 red circle */
+}
+
+.status-badge-circle.warning {
+  background-color: #f59e0b !important;
+}
+
+.status-badge-circle.success {
+  background-color: #10b981 !important;
+}
+
+.status-badge-circle.info {
+  background-color: #3b82f6 !important;
+}
+
+.error-time-relative {
+  font-family: var(--font-family);
+  font-size: 10px;
+  color: #aaa9a3;
+  text-align: center;
+  line-height: 1.1;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 46px;
+}
+
+.item-right-col {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
 }
 
 .error-type-title {
-  font-weight: 500;
+  font-weight: bold;
   font-size: 12px;
-  color: #1a1a2e;
+  color: #000000;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
 }
 
-.error-time-subtle {
-  font-family: var(--font-mono);
-  font-size: 10px;
-  color: #aaa9a3;
-  white-space: nowrap;
+.error-url-row {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  min-width: 0;
 }
 
-.item-body {
-  padding-left: 1.5rem;
+.method-badge {
+  padding: 1px 4px;
+  font-size: 9px;
+  font-weight: bold;
+  font-family: var(--font-mono);
+  border-radius: 2px;
+  color: #ffffff;
+  background-color: #888780;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+.method-badge.POST {
+  background-color: #b05a4a;
+}
+
+.method-badge.GET {
+  background-color: #888780;
+}
+
+.url-text {
+  font-size: 11px;
+  color: #333333;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  flex: 1;
 }
 
 .error-message-text {
   font-size: 11px;
-  color: #888780;
+  color: #111111;
   line-height: 1.4;
   word-break: break-word;
   display: -webkit-box;
@@ -756,7 +871,7 @@ onMounted(() => {
 }
 
 .active-item .error-message-text {
-  color: #1a1a2e;
+  color: #000000;
 }
 
 /* Infinite Scroll Footer Styling */
