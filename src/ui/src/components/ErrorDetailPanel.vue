@@ -835,7 +835,35 @@ watch(() => props.id, (newId) => {
 .header-right-actions {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
+  gap: 4px;
+}
+
+.detail-nav-buttons {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-right: 4px !important;
+}
+
+.header-right-actions .btn {
+  height: 22px;
+  padding: 2px 6px;
+  font-size: 10px;
+  border-radius: 3px;
+  line-height: 1;
+}
+
+.header-right-actions .btn-icon {
+  width: 22px;
+  height: 22px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.header-right-actions .btn i {
+  font-size: 10px;
 }
 
 .btn-close-x {
@@ -843,9 +871,11 @@ watch(() => props.id, (newId) => {
   border: none;
   color: #aaa9a3;
   cursor: pointer;
-  padding: 0.25rem;
+  width: 22px;
+  height: 22px;
+  padding: 0;
   border-radius: 3px;
-  font-size: 1.1rem;
+  font-size: 0.95rem;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -918,7 +948,7 @@ watch(() => props.id, (newId) => {
   font-weight: 500;
   line-height: 1.35;
   color: #1a1a2e;
-  margin: 0;
+  margin: 0 0 4px 0;
 }
 
 .exception-and-actions {
@@ -926,6 +956,7 @@ watch(() => props.id, (newId) => {
   align-items: center;
   flex-wrap: wrap;
   gap: 12px;
+  margin-bottom: 12px;
 }
 
 .exception-type-detail {
@@ -975,6 +1006,10 @@ watch(() => props.id, (newId) => {
   background-color: #eeecea;
 }
 
+.btn-reviewed-text {
+  margin-left: 4px;
+}
+
 .btn-delete-terracotta {
   background-color: #fdf2ef;
   border: 1px solid #e8c4ba;
@@ -1017,37 +1052,38 @@ watch(() => props.id, (newId) => {
 }
 
 .nav-position-text {
-  font-size: 11px;
+  font-size: 10px;
   color: #5f5e5a;
+  padding: 0 2px;
 }
 
 /* Metadata Section */
 .metadata-card {
   background-color: #e6f2f7; /* soft light blue background */
   border-radius: 4px;
-  padding: 16px 20px;
+  padding: 6px 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 24px;
+  gap: 12px;
 }
 
 .metadata-table {
   flex: 1;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 12px;
 }
 
 .metadata-row {
   display: flex;
   align-items: center;
   font-size: 13px;
-  line-height: 1.5;
+  line-height: 1.3;
 }
 
 .metadata-key {
-  width: 120px;
+  width: 75px;
   font-weight: bold;
   color: #333333;
   flex-shrink: 0;
@@ -1057,7 +1093,7 @@ watch(() => props.id, (newId) => {
   color: #333333;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
   word-break: break-all;
 }
 
@@ -1068,11 +1104,11 @@ watch(() => props.id, (newId) => {
 .device-badges {
   display: flex;
   flex-direction: column;
-  gap: 16px;
+  gap: 6px;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
-  padding-left: 20px;
+  padding-left: 10px;
   border-left: 1px solid rgba(0, 162, 237, 0.15);
 }
 
@@ -1083,8 +1119,8 @@ watch(() => props.id, (newId) => {
 }
 
 .badge-circle {
-  width: 52px;
-  height: 52px;
+  width: 38px;
+  height: 38px;
   border-radius: 50%;
   background-color: #00a2ed; /* blue/cyan */
   display: flex;
@@ -1095,20 +1131,25 @@ watch(() => props.id, (newId) => {
   font-weight: bold;
 }
 
+.badge-circle svg {
+  width: 20px !important;
+  height: 20px !important;
+}
+
 .os-text-top {
-  font-size: 12px;
+  font-size: 10px;
   line-height: 1;
 }
 
 .os-text-bottom {
-  font-size: 12px;
+  font-size: 10px;
   line-height: 1;
 }
 
 .badge-label {
-  font-size: 12px;
+  font-size: 10px;
   color: #00a2ed;
-  margin-top: 4px;
+  margin-top: 2px;
   font-weight: 500;
 }
 
@@ -1587,6 +1628,11 @@ watch(() => props.id, (newId) => {
     flex-direction: column;
     align-items: stretch;
     gap: 16px;
+  }
+
+  .metadata-table {
+    grid-template-columns: 1fr;
+    gap: 8px;
   }
 
   .device-badges {

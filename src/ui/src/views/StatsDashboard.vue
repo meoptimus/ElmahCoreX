@@ -389,9 +389,6 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-.col-span-2 {
-  grid-column: span 2;
-}
 
 /* Loading & Empty states */
 .loading-state,
@@ -485,6 +482,15 @@ onMounted(() => {
   flex: 1;
   position: relative;
   min-height: 0;
+  width: 100%;
+}
+
+.chart-container canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 /* Lists section */
@@ -585,5 +591,35 @@ onMounted(() => {
 
 .clickable-item:hover {
   background-color: #eeecea;
+}
+
+@media (max-width: 768px) {
+  .stats-dashboard-view {
+    padding: 10px;
+    gap: 12px;
+  }
+  .metrics-row {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 10px;
+  }
+  .metric-card {
+    padding: 10px 12px;
+  }
+  .metric-value {
+    font-size: 18px;
+  }
+  .charts-row,
+  .lists-row {
+    grid-template-columns: 1fr !important;
+    gap: 12px;
+  }
+  .chart-card {
+    grid-column: span 1 !important;
+    height: 260px;
+    padding: 12px;
+  }
+  .list-card {
+    padding: 12px;
+  }
 }
 </style>

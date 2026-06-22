@@ -453,8 +453,8 @@ onMounted(() => {
   display: flex;
   justify-content: space-between;
   align-items: center;
-  gap: 0.35rem;
-  padding: 10px 12px;
+  gap: 6px;
+  padding: 6px 10px;
   border-bottom: 1px solid #e8e6e0;
 }
 
@@ -466,22 +466,22 @@ onMounted(() => {
 
 .search-icon {
   position: absolute;
-  left: 0.6rem;
+  left: 6px;
   top: 50%;
   transform: translateY(-50%);
   color: #aaa9a3;
-  font-size: 0.75rem;
+  font-size: 10px;
 }
 
 .search-box input {
   width: 100%;
-  padding: 0.35rem 1.75rem;
+  padding: 4px 20px 4px 22px;
   border-radius: 3px;
   border: 1px solid #dddbd4;
   background-color: #ffffff;
   color: #1a1a2e;
   outline: none;
-  font-size: 11px;
+  font-size: 10.5px;
   font-family: var(--font-family);
 }
 
@@ -491,7 +491,7 @@ onMounted(() => {
 
 .clear-search {
   position: absolute;
-  right: 0.6rem;
+  right: 6px;
   top: 50%;
   transform: translateY(-50%);
   background: none;
@@ -499,6 +499,19 @@ onMounted(() => {
   color: #aaa9a3;
   cursor: pointer;
   padding: 0;
+}
+
+.actions-panel .btn {
+  height: 22px;
+  padding: 2px 6px;
+  font-size: 10px;
+  border-radius: 3px;
+  line-height: 1;
+}
+
+.actions-panel .btn i {
+  font-size: 9px;
+  margin-right: 3px !important;
 }
 
 .btn-group {

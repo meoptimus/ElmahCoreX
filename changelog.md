@@ -1,5 +1,19 @@
 # Release Notes
 
+## 2.2.9
+
+### Summary
+
+UI responsiveness improvements, compact spacing adjustments, and stats chart bugfixes.
+
+### Changes
+
+- Converted the metadata card on the detail panel into a two-column grid.
+- Styled the metadata card, circular OS/browser badges, and action buttons to be extremely compact.
+- Fixed a Chart.js responsiveness bug on the Statistics Dashboard by styling canvas elements with absolute positioning.
+- Made the search and filters toolbar layout on the left pane more compact.
+- Added locally-scoped spacing for the Mark Reviewed button icon and text.
+
 ## 2.2.8
 
 ### Summary
