@@ -1,5 +1,19 @@
 # Release Notes
 
+## 2.2.10
+
+### Summary
+
+Background stats analysis, URL normalization, mobile auto-select prevention, and responsive navigation bar.
+
+### Changes
+
+- Implemented page-by-page background analysis for stats compiling in Stats Dashboard.
+- Normalized details URL structures client-side to prevent duplicate routing path segments.
+- Prevented auto-selection of the first error card on mobile view.
+- Repositioned and unconstrained relative time labels on error cards to optimize list view height and improve readability.
+- Added top navbar responsive styling and horizontal scrolling for mobile devices.
+
 ## 2.2.9
 
 ### Summary

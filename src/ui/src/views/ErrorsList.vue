@@ -169,13 +169,13 @@
                 <span class="status-badge-circle" :class="[getSeverityClass(entry.error.statusCode, entry.error.severity), 'status-' + entry.error.statusCode]">
                   {{ entry.error.statusCode || '500' }}
                 </span>
-                <span class="error-time-relative" :title="formatTimeFriendly(entry.error.time)">{{ formatTimeRelative(entry.error.time) }}</span>
               </div>
               <div class="item-right-col">
                 <div class="error-type-title">{{ getShortTypeName(entry.error.type) }}</div>
-                <div class="error-url-row" v-if="entry.error.url">
-                  <span class="method-badge" :class="entry.error.method">{{ entry.error.method || 'GET' }}</span>
-                  <span class="url-text font-mono" :title="entry.error.url">{{ entry.error.url }}</span>
+                <div class="error-url-row">
+                  <span v-if="entry.error.url" class="method-badge" :class="entry.error.method">{{ entry.error.method || 'GET' }}</span>
+                  <span v-if="entry.error.url" class="url-text font-mono" :title="entry.error.url">{{ entry.error.url }}</span>
+                  <span class="error-time-relative" :title="formatTimeFriendly(entry.error.time)">{{ formatTimeRelative(entry.error.time) }}</span>
                 </div>
                 <div class="error-message-text" :title="entry.error.message">
                   {{ entry.error.message }}
@@ -216,7 +216,7 @@
 
 <script setup>
 import { ref, computed, watch, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+import { useRouter, useRoute } from 'vue-router';
 import { useErrorStore } from '../stores/errorStore';
 import { useToast } from 'primevue/usetoast';
 import dayjs from 'dayjs';
@@ -240,6 +240,7 @@ const props = defineProps({
 
 const store = useErrorStore();
 const router = useRouter();
+const route = useRoute();
 const toast = useToast();
 
 const cardsListRef = ref(null);
@@ -385,18 +386,76 @@ const confirmDeleteAll = async () => {
   }
 };
 
+const syncFromRouteQuery = () => {
+  const query = route.query;
+  const filterKeys = ['type', 'message', 'host', 'user', 'statusCode', 'isReviewed', 'from', 'to', 'application'];
+  
+  // Check if query has any of our filter keys
+  const hasFilterInQuery = filterKeys.some(key => query[key] !== undefined);
+  
+  if (hasFilterInQuery) {
+    // Reset all local refs and store filters first
+    searchTerm.value = '';
+    filterHost.value = '';
+    filterUser.value = '';
+    filterType.value = '';
+    filterStatusCode.value = '';
+    filterIsReviewed.value = '';
+    filterApplication.value = '';
+    filterFrom.value = '';
+    filterTo.value = '';
+    
+    // Clear store filters without fetching yet
+    Object.keys(store.filters).forEach(key => {
+      store.filters[key] = '';
+    });
+    
+    // Apply query parameters
+    filterKeys.forEach(key => {
+      if (query[key] !== undefined) {
+        const queryVal = query[key] === null ? '' : String(query[key]);
+        store.filters[key] = queryVal;
+        
+        // Update local refs
+        if (key === 'message') searchTerm.value = queryVal;
+        else if (key === 'host') filterHost.value = queryVal;
+        else if (key === 'user') filterUser.value = queryVal;
+        else if (key === 'type') filterType.value = queryVal;
+        else if (key === 'statusCode') filterStatusCode.value = queryVal;
+        else if (key === 'isReviewed') filterIsReviewed.value = queryVal;
+        else if (key === 'application') filterApplication.value = queryVal;
+        else if (key === 'from') filterFrom.value = queryVal;
+        else if (key === 'to') filterTo.value = queryVal;
+      }
+    });
+    
+    return true; // filters changed
+  }
+  return false;
+};
+
 const loadInitial = async () => {
+  syncFromRouteQuery();
   await store.fetchErrors();
   await store.fetchCounts();
-  if (!selectedErrorId.value && store.errors.length > 0) {
+  if (window.innerWidth > 768 && !selectedErrorId.value && store.errors.length > 0) {
     viewDetails(store.errors[0].id);
   }
 };
 
 
 watch(() => store.errors, (newErrors) => {
-  if (!selectedErrorId.value && newErrors.length > 0) {
+  if (window.innerWidth > 768 && !selectedErrorId.value && newErrors.length > 0) {
     viewDetails(newErrors[0].id);
+  }
+}, { deep: true });
+
+watch(() => route.query, () => {
+  const changed = syncFromRouteQuery();
+  if (changed) {
+    store.pageIndex = 0;
+    store.fetchErrors();
+    store.fetchCounts();
   }
 }, { deep: true });
 
@@ -405,6 +464,7 @@ watch(() => store.filters.message, (newMsg) => {
 });
 
 onMounted(() => {
+  syncFromRouteQuery();
   searchTerm.value = store.filters.message || '';
   loadInitial();
 });
@@ -811,12 +871,10 @@ onMounted(() => {
   font-family: var(--font-family);
   font-size: 10px;
   color: #aaa9a3;
-  text-align: center;
   line-height: 1.1;
   white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 46px;
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .item-right-col {

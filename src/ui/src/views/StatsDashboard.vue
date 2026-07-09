@@ -12,6 +12,30 @@
     </div>
 
     <div v-else class="dashboard-grid">
+      <!-- Background Analysis Control Bar -->
+      <div v-if="totalErrorsInDb > 500 || isAnalyzingAll" class="analysis-control-bar card">
+        <div class="analysis-info">
+          <span v-if="!isAnalyzingAll">
+            Currently analyzing the latest <strong>{{ errors.length }}</strong> errors.
+            Total errors in database: <strong>{{ totalErrorsInDb }}</strong>.
+          </span>
+          <span v-else>
+            Analyzing all errors... Loaded <strong>{{ errors.length }}</strong> of <strong>{{ totalErrorsInDb }}</strong>
+            ({{ Math.round((errors.length / totalErrorsInDb) * 100) }}%)
+          </span>
+        </div>
+        <div class="analysis-actions">
+          <button v-if="!isAnalyzingAll && errors.length < totalErrorsInDb" class="btn btn-primary" @click="startBackgroundAnalysis">
+            <i class="pi pi-bolt mr-1"></i> Analyze All Errors
+          </button>
+          <button v-if="isAnalyzingAll" class="btn btn-danger" @click="stopBackgroundAnalysis">
+            <i class="pi pi-times mr-1"></i> Stop Analysis
+          </button>
+        </div>
+      </div>
+      <div v-if="isAnalyzingAll" class="progress-bar-container">
+        <div class="progress-bar-fill" :style="{ width: (errors.length / totalErrorsInDb * 100) + '%' }"></div>
+      </div>
       <!-- 1. Key Metrics Cards -->
       <div class="metrics-row">
         <div class="metric-card card">
@@ -67,12 +91,14 @@
         <div class="list-card card">
           <h3 class="list-title"><i class="pi pi-link mr-1"></i> Top 5 Affected URLs</h3>
           <ul class="stats-list">
-            <li v-for="(item, idx) in topUrls" :key="idx" class="clickable-item" @click="filterByUrl(item.name)">
-              <span class="list-index">{{ idx + 1 }}</span>
-              <div class="list-content">
-                <span class="list-name font-mono text-break" :title="item.name">{{ item.name || 'N/A' }}</span>
-                <span class="list-count">{{ item.count }} occurrences</span>
-              </div>
+            <li v-for="(item, idx) in topUrls" :key="idx" class="clickable-item">
+              <router-link :to="{ path: '/', query: { message: item.name } }" class="stats-list-link">
+                <span class="list-index">{{ idx + 1 }}</span>
+                <div class="list-content">
+                  <span class="list-name font-mono text-break" :title="item.name">{{ item.name || 'N/A' }}</span>
+                  <span class="list-count">{{ item.count }} occurrences</span>
+                </div>
+              </router-link>
             </li>
           </ul>
         </div>
@@ -81,11 +107,20 @@
         <div class="list-card card">
           <h3 class="list-title"><i class="pi pi-users mr-1"></i> Top 5 Impacted Users</h3>
           <ul class="stats-list" v-if="topUsers.length > 0">
-            <li v-for="(item, idx) in topUsers" :key="idx" class="clickable-item" @click="filterByUser(item.name)">
-              <span class="list-index">{{ idx + 1 }}</span>
-              <div class="list-content">
-                <span class="list-name font-bold">{{ item.name || 'Anonymous' }}</span>
-                <span class="list-count">{{ item.count }} occurrences</span>
+            <li v-for="(item, idx) in topUsers" :key="idx" :class="{ 'clickable-item': item.name && item.name !== 'Anonymous' }">
+              <router-link v-if="item.name && item.name !== 'Anonymous'" :to="{ path: '/', query: { user: item.name } }" class="stats-list-link">
+                <span class="list-index">{{ idx + 1 }}</span>
+                <div class="list-content">
+                  <span class="list-name font-bold">{{ item.name }}</span>
+                  <span class="list-count">{{ item.count }} occurrences</span>
+                </div>
+              </router-link>
+              <div v-else class="stats-list-link-disabled">
+                <span class="list-index">{{ idx + 1 }}</span>
+                <div class="list-content">
+                  <span class="list-name font-bold text-muted">{{ item.name || 'Anonymous' }}</span>
+                  <span class="list-count">{{ item.count }} occurrences</span>
+                </div>
               </div>
             </li>
           </ul>
@@ -99,7 +134,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, nextTick } from 'vue';
+import { ref, computed, onMounted, nextTick, onBeforeUnmount } from 'vue';
 import { useRouter } from 'vue-router';
 import { useErrorStore } from '../stores/errorStore';
 import { elmahApi } from '../api/elmahApi';
@@ -111,6 +146,8 @@ const router = useRouter();
 
 const errors = ref([]);
 const loading = ref(true);
+const totalErrorsInDb = ref(0);
+const isAnalyzingAll = ref(false);
 
 
 const trendChartCanvas = ref(null);
@@ -209,6 +246,7 @@ const loadStatsData = async () => {
     const res = await elmahApi.getErrors(0, 500, {});
     if (res.success && res.data) {
       errors.value = res.data.errors || [];
+      totalErrorsInDb.value = res.data.totalCount || errors.value.length;
     }
 
 
@@ -222,6 +260,45 @@ const loadStatsData = async () => {
     loading.value = false;
   }
 };
+
+const startBackgroundAnalysis = async () => {
+  if (isAnalyzingAll.value) return;
+  isAnalyzingAll.value = true;
+  
+  try {
+    let offset = errors.value.length;
+    const limit = 500;
+    
+    while (offset < totalErrorsInDb.value && isAnalyzingAll.value) {
+      const res = await elmahApi.getErrors(offset, limit, {});
+      if (!res.success || !res.data) break;
+      
+      const newErrors = res.data.errors || [];
+      if (newErrors.length === 0) break;
+      
+      errors.value = [...errors.value, ...newErrors];
+      offset += newErrors.length;
+      
+      // Update charts incrementally
+      renderCharts();
+      
+      // Add a tiny delay to keep UI responsive
+      await new Promise(resolve => setTimeout(resolve, 50));
+    }
+  } catch (err) {
+    console.error('Error in background statistics analysis', err);
+  } finally {
+    isAnalyzingAll.value = false;
+  }
+};
+
+const stopBackgroundAnalysis = () => {
+  isAnalyzingAll.value = false;
+};
+
+onBeforeUnmount(() => {
+  isAnalyzingAll.value = false;
+});
 
 const renderCharts = () => {
   if (errors.value.length === 0) return;
@@ -525,15 +602,101 @@ onMounted(() => {
 }
 
 .stats-list li {
-  display: flex;
-  align-items: center;
-  gap: 12px;
   border-bottom: 1px solid #e8e6e0;
-  padding: 10px 12px;
+  padding: 0;
 }
 
 .stats-list li:last-child {
   border-bottom: none;
+}
+
+.stats-list-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  width: 100%;
+  text-decoration: none;
+  color: inherit;
+}
+
+.stats-list-link-disabled {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 10px 12px;
+  width: 100%;
+  color: inherit;
+}
+
+.text-muted {
+  color: #aaa9a3;
+}
+
+/* Background analysis control bar & progress bar styles */
+.analysis-control-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 10px 16px;
+  background-color: #fcfbfa;
+  border-color: #e8e6e0;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.analysis-info {
+  font-size: 13px;
+  color: #5f5e5a;
+}
+
+.progress-bar-container {
+  width: 100%;
+  height: 4px;
+  background-color: #eeecea;
+  border-radius: 2px;
+  overflow: hidden;
+  margin-top: -12px;
+  margin-bottom: 4px;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: #4a7fc1;
+  transition: width 0.2s ease;
+}
+
+.btn {
+  padding: 6px 12px;
+  font-size: 12px;
+  font-weight: 500;
+  border-radius: 4px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  border: 1px solid transparent;
+  transition: all 0.15s ease;
+}
+
+.btn-primary {
+  background-color: #4a7fc1;
+  color: white;
+  border-color: #3b6da6;
+}
+
+.btn-primary:hover {
+  background-color: #3b6da6;
+}
+
+.btn-danger {
+  background-color: #d94f4f;
+  color: white;
+  border-color: #c04343;
+}
+
+.btn-danger:hover {
+  background-color: #c04343;
 }
 
 .list-index {

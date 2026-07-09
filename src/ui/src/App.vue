@@ -85,7 +85,7 @@
           <div class="about-header">
             <i class="pi pi-shield about-logo-icon"></i>
             <h2>ElmahCoreX</h2>
-            <span class="about-version">v2.2.5</span>
+            <span class="about-version">v2.2.10</span>
           </div>
           <div class="about-body">
             <p>A modernized, high-performance error logging and management dashboard for ASP.NET Core applications.</p>
@@ -710,5 +710,44 @@ body {
 .toast-leave-to {
   opacity: 0;
   transform: translateX(100px) scale(0.9);
+}
+
+@media (max-width: 768px) {
+  .logo {
+    display: none !important;
+  }
+  .header-center {
+    display: none !important;
+  }
+  .version-tag {
+    display: none !important;
+  }
+  .env-badge {
+    display: none !important;
+  }
+  .main-header {
+    padding: 0 0.5rem !important;
+  }
+  .header-left {
+    gap: 0.5rem !important;
+    overflow: hidden;
+    flex: 1;
+    min-width: 0;
+  }
+  .top-nav {
+    gap: 0.75rem !important;
+    overflow-x: auto;
+    white-space: nowrap;
+    flex: 1;
+    min-width: 0;
+    -webkit-overflow-scrolling: touch;
+  }
+  .top-nav::-webkit-scrollbar {
+    display: none;
+  }
+  .top-nav {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
 }
 </style>
