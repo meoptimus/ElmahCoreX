@@ -11,16 +11,7 @@
       </div>
 
       <div class="header-right-actions">
-        <!-- Mark Reviewed Toggle -->
-        <button 
-          v-if="error"
-          class="btn btn-secondary btn-sm" 
-          @click="toggleReviewed"
-          :title="error.isReviewed ? 'Mark as Open' : 'Mark as Reviewed'"
-        >
-          <i :class="error.isReviewed ? 'pi pi-check-circle text-success' : 'pi pi-circle'"></i>
-          <span class="btn-reviewed-text ml-1">{{ error.isReviewed ? 'Reviewed' : 'Review' }}</span>
-        </button>
+
 
         <!-- Delete -->
         <button 
@@ -601,21 +592,7 @@ const navigateError = (id) => {
   router.push({ name: 'detail', params: { id } });
 };
 
-const toggleReviewed = async () => {
-  const current = error.value.isReviewed;
-  try {
-    await store.toggleReview(props.id, !current);
-    error.value.isReviewed = !current;
-    toast.add({ 
-      severity: 'success', 
-      summary: 'Reviewed Toggle', 
-      detail: !current ? 'Error marked as Reviewed' : 'Error marked as Open', 
-      life: 2500 
-    });
-  } catch (err) {
-    console.error(err);
-  }
-};
+
 
 const deleteError = async () => {
   if (confirm('Are you sure you want to delete this error log?')) {

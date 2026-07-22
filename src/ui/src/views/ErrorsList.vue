@@ -21,6 +21,15 @@
           <div class="btn-group">
             <button 
               class="btn btn-neutral btn-sm" 
+              :class="{ 'active': selectionMode }"
+              @click="toggleSelectionMode"
+            >
+              <i class="pi pi-check-square mr-1"></i>
+              Select
+            </button>
+
+            <button 
+              class="btn btn-neutral btn-sm" 
               :class="{ 'active': showFilters }"
               @click="showFilters = !showFilters"
             >
@@ -63,14 +72,7 @@
                 <input type="number" v-model="filterStatusCode" @change="updateFilter('statusCode', filterStatusCode)" placeholder="500" />
               </div>
 
-              <div class="filter-field">
-                <label>Reviewed</label>
-                <select v-model="filterIsReviewed" @change="updateFilter('isReviewed', filterIsReviewed)">
-                  <option value="">All</option>
-                  <option value="false">Open</option>
-                  <option value="true">Reviewed</option>
-                </select>
-              </div>
+
 
               <div class="filter-field">
                 <label>App</label>
@@ -101,12 +103,6 @@
               {{ store.selectedIds.length }} selected
             </span>
             <div class="bulk-actions">
-              <button class="btn btn-sm btn-neutral mr-2" @click="bulkMarkReviewed(true)">
-                <i class="pi pi-check mr-1"></i> Reviewed
-              </button>
-              <button class="btn btn-sm btn-neutral mr-2" @click="bulkMarkReviewed(false)">
-                <i class="pi pi-times-circle mr-1"></i> Open
-              </button>
               <button class="btn btn-sm btn-terracotta" @click="bulkDelete">
                 <i class="pi pi-trash mr-1"></i> Delete
               </button>
@@ -115,7 +111,7 @@
         </transition>
 
         <!-- Global Select All Bar (shown when list has items) -->
-        <div v-if="store.errors.length > 0" class="select-all-bar">
+        <div v-if="selectionMode && store.errors.length > 0" class="select-all-bar">
           <label class="select-all-label">
             <input 
               type="checkbox" 
@@ -151,12 +147,11 @@
               :key="entry.id" 
               class="error-list-item"
               :class="{ 
-                'active-item': entry.id === selectedErrorId, 
-                'reviewed-item': entry.error.isReviewed 
+                'active-item': entry.id === selectedErrorId
               }"
               @click="viewDetails(entry.id)"
             >
-              <div class="item-checkbox-container">
+              <div v-if="selectionMode" class="item-checkbox-container">
                 <input 
                   type="checkbox" 
                   :value="entry.id"
@@ -245,15 +240,22 @@ const toast = useToast();
 
 const cardsListRef = ref(null);
 const showFilters = ref(false);
+const selectionMode = ref(false);
 const searchTerm = ref('');
 const filterHost = ref('');
 const filterUser = ref('');
 const filterType = ref('');
 const filterStatusCode = ref('');
-const filterIsReviewed = ref('');
 const filterApplication = ref('');
 const filterFrom = ref('');
 const filterTo = ref('');
+
+const toggleSelectionMode = () => {
+  selectionMode.value = !selectionMode.value;
+  if (!selectionMode.value) {
+    store.selectedIds = [];
+  }
+};
 
 const selectedErrorId = computed(() => props.id);
 
@@ -305,7 +307,6 @@ const resetFilters = () => {
   filterUser.value = '';
   filterType.value = '';
   filterStatusCode.value = '';
-  filterIsReviewed.value = '';
   filterApplication.value = '';
   filterFrom.value = '';
   filterTo.value = '';
@@ -359,18 +360,12 @@ const getSeverityClass = (statusCode, severity) => {
 };
 
 
-const bulkMarkReviewed = async (isReviewed) => {
-  if (store.selectedIds.length === 0) return;
-  const count = store.selectedIds.length;
-  await store.markSelectedReviewed(isReviewed);
-  toast.add({ severity: 'success', summary: 'Bulk Update', detail: `Marked ${count} errors as ${isReviewed ? 'Reviewed' : 'Open'}.`, life: 3000 });
-};
-
 const bulkDelete = async () => {
   if (store.selectedIds.length === 0) return;
   if (confirm(`Are you sure you want to delete ${store.selectedIds.length} selected error(s)?`)) {
     const count = store.selectedIds.length;
     await store.deleteSelected();
+    selectionMode.value = false;
     toast.add({ severity: 'success', summary: 'Bulk Delete', detail: `Deleted ${count} errors.`, life: 3000 });
   }
 };
@@ -388,7 +383,7 @@ const confirmDeleteAll = async () => {
 
 const syncFromRouteQuery = () => {
   const query = route.query;
-  const filterKeys = ['type', 'message', 'host', 'user', 'statusCode', 'isReviewed', 'from', 'to', 'application'];
+  const filterKeys = ['type', 'message', 'host', 'user', 'statusCode', 'from', 'to', 'application'];
   
   // Check if query has any of our filter keys
   const hasFilterInQuery = filterKeys.some(key => query[key] !== undefined);
@@ -400,7 +395,6 @@ const syncFromRouteQuery = () => {
     filterUser.value = '';
     filterType.value = '';
     filterStatusCode.value = '';
-    filterIsReviewed.value = '';
     filterApplication.value = '';
     filterFrom.value = '';
     filterTo.value = '';
@@ -422,7 +416,6 @@ const syncFromRouteQuery = () => {
         else if (key === 'user') filterUser.value = queryVal;
         else if (key === 'type') filterType.value = queryVal;
         else if (key === 'statusCode') filterStatusCode.value = queryVal;
-        else if (key === 'isReviewed') filterIsReviewed.value = queryVal;
         else if (key === 'application') filterApplication.value = queryVal;
         else if (key === 'from') filterFrom.value = queryVal;
         else if (key === 'to') filterTo.value = queryVal;

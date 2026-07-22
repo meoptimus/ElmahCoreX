@@ -1,5 +1,17 @@
 # Release Notes
 
+## 2.2.12
+
+### Summary
+
+Removal of Reviewed feature and conditional checkboxes to save vertical and horizontal list space.
+
+### Changes
+
+- Removed all Reviewed UI elements, filters, state classes, and detail panel actions.
+- Added a "Select" button to enter multi-select Mode. Checkboxes and "Select All" bar are now conditional on this mode to preserve list space.
+- Configured bulk delete to automatically toggle multi-select mode off on completion.
+
 ## 2.2.11
 
 ### Summary
