@@ -495,8 +495,8 @@ onMounted(() => {
   flex-direction: column;
   overflow: hidden;
   height: 100%;
-  background-color: #f7f6f2; /* Warm parchment */
-  border-right: 1px solid #e2e0da;
+  background-color: #ffffff; /* White background matching detail panel */
+  border-right: 1px solid #e8e6e0;
 }
 
 .details-pane {
@@ -796,12 +796,12 @@ onMounted(() => {
 }
 
 .error-list-item:hover {
-  background-color: #eeecea;
+  background-color: #f2f9fc; /* Soft cyan-blue hover */
 }
 
 .error-list-item.active-item {
-  background-color: #ffffff !important;
-  border-left: 3px solid #4a7fc1 !important;
+  background-color: #e6f2f7 !important; /* Soft cyan-blue active matching metadata card */
+  border-left: 3px solid #00a2ed !important; /* Theme blue/cyan border matching exception detail */
 }
 
 .error-list-item.reviewed-item {
@@ -951,7 +951,7 @@ onMounted(() => {
   border-top: 1px solid #e8e6e0;
   font-size: 11px;
   color: #aaa9a3;
-  background-color: #f7f6f2;
+  background-color: #ffffff; /* White background */
   text-align: center;
 }
 

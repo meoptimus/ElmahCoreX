@@ -2,7 +2,7 @@
 
     <PropertyGroup>
         <LangVersion>default</LangVersion>
-        <Version>2.2.10</Version>
+        <Version>2.2.11</Version>
         <PackageProjectUrl>https://github.com/ElmahCoreEx/ElmahCoreEx</PackageProjectUrl>
         <AssemblyVersion>2.2.5.0</AssemblyVersion>
         <FileVersion>2.2.5.0</FileVersion>

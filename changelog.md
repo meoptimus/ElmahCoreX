@@ -1,5 +1,19 @@
 # Release Notes
 
+## 2.2.11
+
+### Summary
+
+UI color combination enhancements to improve list pane readability.
+
+### Changes
+
+- Set left list pane background color to white to match details panel styling.
+- Set active error item background color to soft cyan-blue (#e6f2f7) matching the metadata card.
+- Set active error item left border to theme blue (#00a2ed) matching the exception title.
+- Updated hover background color on error items to soft cyan-blue (#f2f9fc).
+- Set infinite scroll footer background color to white to match the new list pane background.
+
 ## 2.2.10
 
 ### Summary
