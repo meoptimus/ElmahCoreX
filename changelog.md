@@ -1,5 +1,21 @@
 # Release Notes
 
+## 2.2.13
+
+### Summary
+
+Optional cookie logging for requests carrying sensitive values, corrected browser and OS detection, and detail panel fixes.
+
+### Changes
+
+- Added `ElmahOptions.LogCookies` (default `true`). When disabled, neither the request cookie collection nor the `Cookie`/`Set-Cookie` request headers are captured, so nothing cookie related reaches the log.
+- Fixed browser detection reporting Edge, Opera, Vivaldi and Brave as Chrome, since every Chromium derivative also carries "Chrome" in its user agent. Added Samsung Internet and Yandex.
+- Fixed iPad being reported as iPhone, and added ChromeOS detection.
+- Made the URL in the detail panel a clickable link that opens in a new tab, with relative paths resolved against the site origin.
+- Fixed the metadata label column colliding with its value when the label was wider than the fixed 75px column.
+- Labelled an unrecognised browser as "Unknown" rather than "Generic", and surfaced the raw user agent as a tooltip on the device badges.
+- Exposed `logCookies` and `logRequestBody` through the `api/config` endpoint.
+
 ## 2.2.12
 
 ### Summary

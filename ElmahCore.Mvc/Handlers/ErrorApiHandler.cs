@@ -7,6 +7,7 @@ using System.Text.Json;
 using System.Threading.Tasks;
 using ElmahCore.Mvc.Notifiers;
 using Microsoft.AspNetCore.Http;
+using Microsoft.Extensions.Options;
 
 namespace ElmahCore.Mvc.Handlers;
 
@@ -159,10 +160,14 @@ internal static class ErrorApiHandler
 
                 case "api/config":
                     {
+                        var elmahOptions = context.RequestServices?
+                            .GetService(typeof(IOptions<ElmahOptions>)) as IOptions<ElmahOptions>;
                         await context.Response.WriteSuccessAsync(new {
                             logName = errorLog.Name,
                             applicationName = errorLog.ApplicationName,
-                            sourcePaths = errorLog.SourcePaths ?? Array.Empty<string>()
+                            sourcePaths = errorLog.SourcePaths ?? Array.Empty<string>(),
+                            logCookies = elmahOptions?.Value?.LogCookies ?? true,
+                            logRequestBody = elmahOptions?.Value?.LogRequestBody ?? true
                         });
                     }
                     break;

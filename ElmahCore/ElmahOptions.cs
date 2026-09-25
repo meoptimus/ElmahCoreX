@@ -90,6 +90,15 @@ public class ElmahOptions
     public bool LogRequestBody { get; set; } = true;
 
     /// <summary>
+    ///     Enable/Disable cookie logging. Cookies frequently carry authentication tokens and other
+    ///     sensitive values, so set this to <c>false</c> to keep them out of the error log entirely.
+    ///     When disabled, neither the request cookie collection nor the <c>Cookie</c>/<c>Set-Cookie</c>
+    ///     request headers are captured.
+    ///     Default is true for backward compatibility.
+    /// </summary>
+    public bool LogCookies { get; set; } = true;
+
+    /// <summary>
     /// Enable or disable the diagnostic observer
     /// Default is true
     /// </summary>

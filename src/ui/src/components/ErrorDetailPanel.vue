@@ -104,9 +104,15 @@
                 <div class="metadata-key">URL</div>
                 <div class="metadata-val font-mono">
                   <span class="method-badge" :class="error.method">{{ error.method || 'GET' }}</span>
-                  <span class="url-text">{{ error.url }}</span>
-                  <a :href="error.url" target="_blank" class="ext-link" title="Open URL in new tab">
-                    <i class="pi pi-external-link"></i>
+                  <a
+                    :href="urlHref"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    class="url-link"
+                    :title="`Open ${error.url} in new tab`"
+                  >
+                    <span class="url-text">{{ error.url }}</span>
+                    <i class="pi pi-external-link url-link-icon"></i>
                   </a>
                 </div>
               </div>
@@ -134,8 +140,8 @@
             </div>
 
             <!-- OS & Browser Circular Badges on the right -->
-            <div class="device-badges" v-if="osName || browserName">
-              <div class="device-badge" v-if="osName">
+            <div class="device-badges" v-if="userAgent">
+              <div class="device-badge" v-if="osName" :title="userAgentTitle">
                 <div class="badge-circle os-badge">
                   <span v-if="getOsSvg(osName)" v-html="getOsSvg(osName)"></span>
                   <template v-else>
@@ -145,11 +151,11 @@
                 </div>
                 <div class="badge-label">{{ osName }}</div>
               </div>
-              <div class="device-badge" v-if="browserName">
+              <div class="device-badge" v-if="browserName" :title="userAgentTitle">
                 <div class="badge-circle browser-badge">
                   <span v-html="getBrowserSvg(browserName)"></span>
                 </div>
-                <div class="badge-label">{{ browserName }}</div>
+                <div class="badge-label">{{ browserLabel }}</div>
               </div>
             </div>
           </div>
@@ -456,8 +462,32 @@ const openJson = () => {
   window.open(jsonUrl.value, '_blank');
 };
 
+const urlHref = computed(() => {
+  const url = error.value?.url || '';
+  if (!url) return '#';
+  if (/^https?:\/\//i.test(url)) return url;
+  return window.location.origin + (url.startsWith('/') ? url : '/' + url);
+});
+
 const osName = computed(() => error.value?.os || error.value?.Os || '');
 const browserName = computed(() => error.value?.browser || error.value?.Browser || '');
+
+// Header keys keep whatever casing the server sent, so look User-Agent up case-insensitively.
+const userAgent = computed(() => {
+  const headers = error.value?.header || {};
+  const key = Object.keys(headers).find(k => k.toLowerCase() === 'user-agent');
+  return key ? headers[key] : '';
+});
+
+// "Generic" is what the backend returns when it recognises nothing — say so plainly
+// rather than inventing a brand name.
+const browserLabel = computed(() =>
+  browserName.value === 'Generic' ? 'Unknown' : browserName.value
+);
+
+const userAgentTitle = computed(() =>
+  userAgent.value ? `User-Agent: ${userAgent.value}` : ''
+);
 
 const getOsTopText = (os) => {
   if (!os) return 'sys';
@@ -1045,25 +1075,29 @@ watch(() => props.id, (newId) => {
   gap: 12px;
 }
 
+/*
+ * Two label/value pairs per line. The label columns size to their widest label
+ * (so "Application" can never collide with its value) while the value columns
+ * share the remaining space, which keeps every value flush-left in its column.
+ */
 .metadata-table {
   flex: 1;
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 4px 12px;
-}
-
-.metadata-row {
-  display: flex;
+  grid-template-columns: max-content minmax(0, 1fr) max-content minmax(0, 1fr);
   align-items: center;
+  gap: 5px 12px;
   font-size: 13px;
   line-height: 1.3;
 }
 
+.metadata-row {
+  display: contents;
+}
+
 .metadata-key {
-  width: 75px;
   font-weight: bold;
   color: #333333;
-  flex-shrink: 0;
+  white-space: nowrap;
 }
 
 .metadata-val {
@@ -1165,6 +1199,30 @@ watch(() => props.id, (newId) => {
 
 .ext-link i {
   font-size: 12px;
+}
+
+.url-link {
+  color: #00a2ed;
+  text-decoration: none;
+  display: inline;
+  word-break: break-all;
+  transition: color 0.15s;
+}
+
+.url-link:hover {
+  color: #0088cc;
+  text-decoration: underline;
+}
+
+.url-link-icon {
+  font-size: 11px;
+  margin-left: 5px;
+  opacity: 0.85;
+  vertical-align: baseline;
+}
+
+.url-link:hover .url-link-icon {
+  opacity: 1;
 }
 
 .ip-link {

@@ -94,12 +94,15 @@ public class ErrorWrapper
             var userAgent = _error.ServerVariables["Header_User-Agent"];
             if (string.IsNullOrEmpty(userAgent)) return null;
 
+            // Android reports "Linux" too, and ChromeOS reports neither, so the more
+            // specific platforms have to be matched before the generic ones.
             if (userAgent.Contains("Windows")) return "Windows";
             if (userAgent.Contains("Android")) return "Android";
-            if (userAgent.Contains("Linux")) return "Linux";
+            if (userAgent.Contains("CrOS")) return "ChromeOS";
             if (userAgent.Contains("iPhone")) return "iPhone";
-            if (userAgent.Contains("iPad")) return "iPhone";
-            if (userAgent.Contains("Macintosh")) return "Macintosh";
+            if (userAgent.Contains("iPad")) return "iPad";
+            if (userAgent.Contains("Macintosh") || userAgent.Contains("Mac OS X")) return "Macintosh";
+            if (userAgent.Contains("Linux") || userAgent.Contains("X11")) return "Linux";
             return null;
         }
     }
@@ -114,15 +117,18 @@ public class ErrorWrapper
             if (Crawlers.Exists(x => userAgent.Contains(x)))
                 return "Bot";
 
-            if (userAgent.Contains("Chrome")) return "Chrome";
-            if (userAgent.Contains("Firefox")) return "Firefox";
-            if (userAgent.Contains("Safari") || userAgent.Contains("AppleWebKit")) return "Safari";
-            if (userAgent.Contains("OP")) return "Opera";
-            if (userAgent.Contains("Edge")) return "Edge";
-            if (userAgent.Contains("AppleWebKit")) return "AndroidBrowser";
+            // Order matters: every Chromium derivative also carries "Chrome" in its
+            // user agent, so the more specific brands have to be matched first.
+            if (userAgent.Contains("Edg")) return "Edge";
+            if (userAgent.Contains("OPR/") || userAgent.Contains("Opera")) return "Opera";
             if (userAgent.Contains("Vivaldi")) return "Vivaldi";
             if (userAgent.Contains("Brave")) return "Brave";
-            if (userAgent.Contains("MSIE") || userAgent.Contains("rv:")) return "MSIE";
+            if (userAgent.Contains("SamsungBrowser")) return "Samsung Internet";
+            if (userAgent.Contains("YaBrowser")) return "Yandex";
+            if (userAgent.Contains("Firefox") || userAgent.Contains("FxiOS")) return "Firefox";
+            if (userAgent.Contains("CriOS") || userAgent.Contains("Chrome")) return "Chrome";
+            if (userAgent.Contains("MSIE") || userAgent.Contains("Trident")) return "MSIE";
+            if (userAgent.Contains("Safari") || userAgent.Contains("AppleWebKit")) return "Safari";
             return "Generic";
         }
     }

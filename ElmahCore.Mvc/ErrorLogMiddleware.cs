@@ -43,6 +43,7 @@ internal sealed class ErrorLogMiddleware
     private readonly ErrorLog _errorLog;
     private readonly List<IErrorFilter> _filters = new List<IErrorFilter>();
     private readonly ILogger _logger;
+    private readonly bool _logCookies = true;
     private readonly bool _logRequestBody = true;
     private readonly RequestDelegate _next;
     private readonly IEnumerable<IErrorNotifier> _notifiers;
@@ -75,6 +76,7 @@ internal sealed class ErrorLogMiddleware
         foreach (var errorFilter in options.Filters) Filtering += errorFilter.OnErrorModuleFiltering;
 
         _logRequestBody = elmahOptions.Value.LogRequestBody;
+        _logCookies = elmahOptions.Value.LogCookies;
 
         if (!string.IsNullOrEmpty(options.FiltersConfig))
             try
@@ -313,7 +315,7 @@ internal sealed class ErrorLogMiddleware
             //
             // AddMessage away...
             //
-            var error = new Error(e, context, body);
+            var error = new Error(e, context, body, _logCookies);
 
             // Override status code if provided
             if (statusCode.HasValue)

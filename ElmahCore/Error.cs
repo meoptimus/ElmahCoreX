@@ -49,7 +49,11 @@ public sealed class Error : ICloneable
     ///     <see cref="HttpContext" /> instance representing the HTTP
     ///     context during the exception.
     /// </summary>
-    public Error(Exception e, HttpContext context = null, string body = null)
+    /// <param name="logCookies">
+    ///     When false, the request cookie collection and any cookie carrying header are not captured.
+    ///     See <c>ElmahOptions.LogCookies</c>.
+    /// </param>
+    public Error(Exception e, HttpContext context = null, string body = null, bool logCookies = true)
     {
         var baseException = e?.GetBaseException();
         _message = baseException?.Message;
@@ -101,7 +105,7 @@ public sealed class Error : ICloneable
             var request = context.Request;
 
             // Load Server Variables
-            _serverVariables = GetServerVariables(context);
+            _serverVariables = GetServerVariables(context, logCookies);
             _serverVariables.Add("HttpStatusCode", StatusCode.ToString());
             _queryString = CopyCollection(QueryHelpers.ParseQuery(request.QueryString.Value));
             _form = CopyCollection(request.HasFormContentType ? request.Form : null);
@@ -111,7 +115,8 @@ public sealed class Error : ICloneable
                 _form.Add("$request-body", body);
             }
 
-            _cookies = CopyCollection(request.Cookies);
+            if (logCookies)
+                _cookies = CopyCollection(request.Cookies);
             MessageLog = context.Features.Get<ElmahLogFeature>()?.Log ?? new List<ElmahLogMessageEntry>();
             SqlLog = context.Features.Get<ElmahLogFeature>()?.LogSql ?? new List<ElmahLogSqlEntry>();
             var paramList = context.Features.Get<ElmahLogFeature>()?.Params;
@@ -321,21 +326,31 @@ public sealed class Error : ICloneable
         return copy;
     }
 
-    private NameValueCollection GetServerVariables(HttpContext context)
+    private NameValueCollection GetServerVariables(HttpContext context, bool logCookies = true)
     {
         var serverVariables = new NameValueCollection();
-        LoadVariables(serverVariables, () => context.Features, "");
-        LoadVariables(serverVariables, () => context.User, "User_");
+        LoadVariables(serverVariables, () => context.Features, "", logCookies);
+        LoadVariables(serverVariables, () => context.User, "User_", logCookies);
 
         var ss = context.RequestServices?.GetService(typeof(ISession));
         if (ss != null)
-            LoadVariables(serverVariables, () => context.Session, "Session_");
-        LoadVariables(serverVariables, () => context.Items, "Items_");
-        LoadVariables(serverVariables, () => context.Connection, "Connection_");
+            LoadVariables(serverVariables, () => context.Session, "Session_", logCookies);
+        LoadVariables(serverVariables, () => context.Items, "Items_", logCookies);
+        LoadVariables(serverVariables, () => context.Connection, "Connection_", logCookies);
         return serverVariables;
     }
 
-    private void LoadVariables(NameValueCollection serverVariables, Func<object> getObject, string prefix)
+    /// <summary>
+    ///     True when <paramref name="name" /> names a variable that carries cookie data (for example
+    ///     "Header_Cookie" or "Header_Set-Cookie") and so must be dropped when cookie logging is off.
+    /// </summary>
+    private static bool IsCookieVariable(string name)
+    {
+        return name != null && name.IndexOf("cookie", StringComparison.OrdinalIgnoreCase) >= 0;
+    }
+
+    private void LoadVariables(NameValueCollection serverVariables, Func<object> getObject, string prefix,
+        bool logCookies = true)
     {
         object obj;
         try
@@ -385,7 +400,9 @@ public sealed class Error : ICloneable
                                         StringComparison.InvariantCultureIgnoreCase)
                                         ? "Header_"
                                         : prop.Name + "_";
-                                serverVariables.Add(prefix + propName + keyProp.GetValue(item), val.ToString());
+                                var key = prefix + propName + keyProp.GetValue(item);
+                                if (logCookies || !IsCookieVariable(key))
+                                    serverVariables.Add(key, val.ToString());
                             }
                         }
                     }
@@ -400,7 +417,8 @@ public sealed class Error : ICloneable
             try
             {
                 if (value != null && value.GetType().ToString() != value.ToString() &&
-                    !value.GetType().IsSubclassOf(typeof(Stream)))
+                    !value.GetType().IsSubclassOf(typeof(Stream)) &&
+                    (logCookies || !IsCookieVariable(prefix + prop.Name)))
                     serverVariables.Add(prefix + prop.Name, value?.ToString());
             }
             catch

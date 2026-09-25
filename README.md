@@ -118,6 +118,19 @@ services.AddElmah<SqlErrorLog>(options =>
 
 This option works with `SqlErrorLog`, `MySqlErrorLog`, and `PgsqlErrorLog`. Default is `true` for backward compatibility.
 
+## Disable Cookie Logging
+
+Cookies frequently carry authentication tokens and other sensitive values. Set `LogCookies` to `false` to keep them out of the error log entirely:
+
+```csharp
+services.AddElmah(options =>
+{
+  options.LogCookies = false; // Do not capture cookies
+});
+```
+
+When disabled, neither the request cookie collection (the **Cookies** tab) nor the `Cookie` / `Set-Cookie` request headers (the **Header** tab) are captured, so nothing cookie related is ever written to the log. Default is `true` for backward compatibility.
+
 ## Raise exception
 
 To raise a custom exception to log:
