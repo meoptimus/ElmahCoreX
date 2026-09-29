@@ -1,5 +1,15 @@
 # Release Notes
 
+## 2.2.14
+
+### Summary
+
+Reordered the metadata card in the error detail panel.
+
+### Changes
+
+- Moved the URL to the first position in the left column of the error detail metadata card, and moved the Application name to the last row.
+
 ## 2.2.13
 
 ### Summary

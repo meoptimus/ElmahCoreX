@@ -96,10 +96,6 @@
           <!-- Metadata Section on light blue card -->
           <div class="metadata-card mb-4">
             <div class="metadata-table">
-              <div class="metadata-row">
-                <div class="metadata-key">When</div>
-                <div class="metadata-val font-mono">{{ formatTime(error.time) }}</div>
-              </div>
               <div class="metadata-row" v-if="error.url">
                 <div class="metadata-key">URL</div>
                 <div class="metadata-val font-mono">
@@ -116,6 +112,10 @@
                   </a>
                 </div>
               </div>
+              <div class="metadata-row">
+                <div class="metadata-key">When</div>
+                <div class="metadata-val font-mono">{{ formatTime(error.time) }}</div>
+              </div>
               <div class="metadata-row" v-if="error.client">
                 <div class="metadata-key">Client IP</div>
                 <div class="metadata-val font-mono">
@@ -125,10 +125,6 @@
                   </a>
                 </div>
               </div>
-              <div class="metadata-row" v-if="error.applicationName">
-                <div class="metadata-key">Application</div>
-                <div class="metadata-val">{{ error.applicationName }}</div>
-              </div>
               <div class="metadata-row" v-if="error.source">
                 <div class="metadata-key">Source</div>
                 <div class="metadata-val">{{ error.source }}</div>
@@ -136,6 +132,10 @@
               <div class="metadata-row" v-if="error.user">
                 <div class="metadata-key">User</div>
                 <div class="metadata-val">{{ error.user }}</div>
+              </div>
+              <div class="metadata-row" v-if="error.applicationName">
+                <div class="metadata-key">Application</div>
+                <div class="metadata-val">{{ error.applicationName }}</div>
               </div>
             </div>
 
