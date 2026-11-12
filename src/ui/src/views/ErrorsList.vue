@@ -1,56 +1,75 @@
 <template>
   <div class="errors-list-view" :class="{ 'has-selection': selectedErrorId }">
-    <div class="split-container">
-      <!-- Left side: List pane (fixed 300px) -->
+    <div
+      class="split-container"
+      :class="{ 'list-collapsed': listCollapsed, 'is-resizing': resizing }"
+      :style="{ '--list-width': listWidth + 'px' }"
+    >
+      <!-- Shown in place of the list while it is collapsed -->
+      <div class="list-rail">
+        <button class="btn btn-text btn-sm btn-icon" title="Show the error list" aria-label="Show the error list" @click="setListCollapsed(false)">
+          <i class="pi pi-angle-double-right"></i>
+        </button>
+        <span class="rail-count" :title="`${store.totalCount} errors`">{{ store.totalCount }}</span>
+      </div>
+
+      <!-- Left side: List pane (width is user-adjustable) -->
       <div class="list-pane">
         <!-- Search, Select All, and Filter Action Bar -->
-        <div class="actions-panel mb-4">
+        <div class="actions-panel">
+          <div class="search-row">
           <div class="search-box">
             <i class="pi pi-search search-icon"></i>
-            <input 
-              type="text" 
-              placeholder="Search..." 
-              v-model="searchTerm" 
+            <input
+              type="text"
+              placeholder="Search error messages"
+              aria-label="Search error messages"
+              v-model="searchTerm"
               @input="onSearchInput"
             />
-            <button v-if="searchTerm" class="clear-search" @click="clearSearch">
+            <button v-if="searchTerm" class="clear-search" aria-label="Clear search" @click="clearSearch">
               <i class="pi pi-times"></i>
+            </button>
+          </div>
+            <button class="btn btn-text btn-sm btn-icon btn-collapse-list" title="Hide the error list" aria-label="Hide the error list" @click="setListCollapsed(true)">
+              <i class="pi pi-angle-double-left"></i>
             </button>
           </div>
 
           <div class="btn-group">
-            <button 
-              class="btn btn-neutral btn-sm" 
+            <button
+              class="btn btn-neutral btn-sm"
               :class="{ 'active': selectionMode }"
               @click="toggleSelectionMode"
             >
-              <i class="pi pi-check-square mr-1"></i>
+              <i class="pi pi-check-square"></i>
               Select
             </button>
 
-            <button 
-              class="btn btn-neutral btn-sm" 
+            <button
+              class="btn btn-neutral btn-sm"
               :class="{ 'active': showFilters }"
               @click="showFilters = !showFilters"
             >
-              <i class="pi pi-filter mr-1"></i>
+              <i class="pi pi-filter"></i>
               Filters
-              <span v-if="store.hasActiveFilters" class="active-dot"></span>
+              <span v-if="store.hasActiveFilters" class="active-dot" title="Filters are active"></span>
             </button>
 
-            <button 
-              class="btn btn-terracotta btn-sm" 
+            <button
+              class="btn btn-danger-soft btn-sm btn-delete-all"
+              title="Delete every error in the log"
               @click="confirmDeleteAll"
             >
-              <i class="pi pi-trash mr-1"></i>
-              Clear
+              <i class="pi pi-trash"></i>
+              Delete all
             </button>
           </div>
         </div>
 
         <!-- Collapsible Advanced Filters -->
         <transition name="slide-down">
-          <div v-if="showFilters" class="filters-card card mb-4">
+          <div v-if="showFilters" class="filters-card">
             <div class="filters-grid">
               <div class="filter-field">
                 <label>Host</label>
@@ -91,7 +110,7 @@
             </div>
 
             <div class="filters-footer">
-              <button class="btn btn-sm btn-text" @click="resetFilters">Reset</button>
+              <button class="btn btn-sm btn-text" @click="resetFilters">Reset filters</button>
             </div>
           </div>
         </transition>
@@ -103,8 +122,8 @@
               {{ store.selectedIds.length }} selected
             </span>
             <div class="bulk-actions">
-              <button class="btn btn-sm btn-terracotta" @click="bulkDelete">
-                <i class="pi pi-trash mr-1"></i> Delete
+              <button class="btn btn-sm btn-danger" @click="bulkDelete">
+                <i class="pi pi-trash"></i> Delete selected
               </button>
             </div>
           </div>
@@ -119,7 +138,7 @@
               @change="toggleSelectAll"
               class="select-all-checkbox"
             />
-            <span>Select All loaded errors</span>
+            <span>Select all {{ store.errors.length }} loaded</span>
           </label>
         </div>
 
@@ -135,9 +154,16 @@
           </div>
 
           <div v-else-if="store.errors.length === 0" class="empty-state">
-            <i class="pi pi-check-circle empty-icon text-success"></i>
-            <h3>All Clear!</h3>
-            <p>No logged errors matching the current filter criteria.</p>
+            <i class="pi pi-check-circle empty-icon"></i>
+            <template v-if="store.hasActiveFilters">
+              <h3>No matching errors</h3>
+              <p>Nothing in the log matches this search and these filters.</p>
+              <button class="btn btn-neutral btn-sm" @click="resetAll">Reset search and filters</button>
+            </template>
+            <template v-else>
+              <h3>No errors logged</h3>
+              <p>New errors show up here as soon as they are logged.</p>
+            </template>
           </div>
 
           <!-- Flat Rows List -->
@@ -146,34 +172,37 @@
               v-for="entry in store.errors" 
               :key="entry.id" 
               class="error-list-item"
-              :class="{ 
-                'active-item': entry.id === selectedErrorId
-              }"
+              :class="[
+                'sev-' + getSeverityClass(entry.error.statusCode, entry.error.severity),
+                { 'active-item': entry.id === selectedErrorId }
+              ]"
               @click="viewDetails(entry.id)"
             >
               <div v-if="selectionMode" class="item-checkbox-container">
-                <input 
-                  type="checkbox" 
+                <input
+                  type="checkbox"
                   :value="entry.id"
                   v-model="store.selectedIds"
                   @click.stop
                   class="item-checkbox"
+                  aria-label="Select this error"
                 />
               </div>
-              <div class="item-left-col">
-                <span class="status-badge-circle" :class="[getSeverityClass(entry.error.statusCode, entry.error.severity), 'status-' + entry.error.statusCode]">
-                  {{ entry.error.statusCode || '500' }}
-                </span>
-              </div>
-              <div class="item-right-col">
-                <div class="error-type-title">{{ getShortTypeName(entry.error.type) }}</div>
-                <div class="error-url-row">
-                  <span v-if="entry.error.url" class="method-badge" :class="entry.error.method">{{ entry.error.method || 'GET' }}</span>
-                  <span v-if="entry.error.url" class="url-text font-mono" :title="entry.error.url">{{ entry.error.url }}</span>
+              <div class="item-main">
+                <div class="item-top-row">
+                  <span class="status-chip" :class="getSeverityClass(entry.error.statusCode, entry.error.severity)">
+                    {{ entry.error.statusCode || '500' }}
+                  </span>
+                  <span class="error-type-title" :title="entry.error.type">{{ getShortTypeName(entry.error.type) }}</span>
                   <span class="error-time-relative" :title="formatTimeFriendly(entry.error.time)">{{ formatTimeRelative(entry.error.time) }}</span>
                 </div>
-                <div class="error-message-text" :title="entry.error.message">
-                  {{ entry.error.message }}
+                <div class="item-bottom-row">
+                  <span class="error-message-text" :title="entry.error.message">{{ entry.error.message }}</span>
+                  <span
+                    v-if="entry.error.url"
+                    class="url-text font-mono"
+                    :title="`${entry.error.method || 'GET'} ${entry.error.url}`"
+                  >{{ entry.error.url }}</span>
                 </div>
               </div>
             </div>
@@ -182,15 +211,33 @@
           <!-- Infinite Scroll Pager Status Footer -->
           <div v-if="store.errors.length > 0" class="infinite-scroll-footer">
             <template v-if="loadingMore">
-              <i class="pi pi-spin pi-spinner mr-1"></i> Loading more...
+              <i class="pi pi-spin pi-spinner mr-1"></i> Loading more…
+            </template>
+            <template v-else-if="store.errors.length >= store.totalCount">
+              All {{ store.totalCount }} loaded
             </template>
             <template v-else>
-              Loaded {{ store.errors.length }} of {{ store.totalCount }}
-              <span v-if="store.errors.length >= store.totalCount"> — All loaded</span>
+              Showing {{ store.errors.length }} of {{ store.totalCount }}
             </template>
           </div>
         </div>
       </div>
+
+      <!-- Drag to resize the list, double-click to reset -->
+      <div
+        class="pane-resizer"
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize the error list"
+        :aria-valuenow="listWidth"
+        :aria-valuemin="LIST_MIN"
+        :aria-valuemax="LIST_MAX"
+        tabindex="0"
+        title="Drag to resize. Double-click to reset."
+        @pointerdown="startResize"
+        @dblclick="resetListWidth"
+        @keydown="onResizerKey"
+      ></div>
 
       <!-- Right side: Details pane -->
       <div class="details-pane" :class="{ 'active': selectedErrorId }">
@@ -201,8 +248,8 @@
           @deleted="onDetailDeleted" 
         />
         <div v-else class="no-error-selected">
-          <i class="pi pi-exclamation-circle placeholder-icon"></i>
-          <p>Select an error from the list to view details.</p>
+          <i class="pi pi-arrow-left placeholder-icon"></i>
+          <p>Select an error to see its stack trace and request details.</p>
         </div>
       </div>
     </div>
@@ -249,6 +296,82 @@ const filterStatusCode = ref('');
 const filterApplication = ref('');
 const filterFrom = ref('');
 const filterTo = ref('');
+
+// List pane width and collapsed state, remembered between visits.
+const LIST_MIN = 260;
+const LIST_MAX = 800;
+const LIST_DEFAULT = 400;
+
+const readSetting = (key) => {
+  try {
+    return localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+};
+
+const saveSetting = (key, value) => {
+  try {
+    localStorage.setItem(key, value);
+  } catch {
+    /* storage unavailable: the setting lasts for this visit only */
+  }
+};
+
+// Never let the list squeeze the detail pane below a readable width.
+const clampListWidth = (width) =>
+  Math.round(Math.min(Math.max(width, LIST_MIN), Math.max(LIST_MIN, Math.min(LIST_MAX, window.innerWidth - 360))));
+
+const listWidth = ref(clampListWidth(parseInt(readSetting('list_pane_width'), 10) || LIST_DEFAULT));
+const listCollapsed = ref(readSetting('list_pane_collapsed') === '1');
+const resizing = ref(false);
+
+const setListCollapsed = (collapsed) => {
+  listCollapsed.value = collapsed;
+  saveSetting('list_pane_collapsed', collapsed ? '1' : '0');
+};
+
+const setListWidth = (width) => {
+  listWidth.value = clampListWidth(width);
+  saveSetting('list_pane_width', String(listWidth.value));
+};
+
+const resetListWidth = () => setListWidth(LIST_DEFAULT);
+
+const startResize = (e) => {
+  if (e.button !== 0) return;
+  e.preventDefault();
+  const startX = e.clientX;
+  const startWidth = listWidth.value;
+  resizing.value = true;
+
+  const onMove = (ev) => {
+    listWidth.value = clampListWidth(startWidth + ev.clientX - startX);
+  };
+  const onEnd = () => {
+    resizing.value = false;
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', onEnd);
+    window.removeEventListener('pointercancel', onEnd);
+    saveSetting('list_pane_width', String(listWidth.value));
+  };
+  window.addEventListener('pointermove', onMove);
+  window.addEventListener('pointerup', onEnd);
+  window.addEventListener('pointercancel', onEnd);
+};
+
+const onResizerKey = (e) => {
+  if (e.key === 'ArrowLeft') {
+    e.preventDefault();
+    setListWidth(listWidth.value - 24);
+  } else if (e.key === 'ArrowRight') {
+    e.preventDefault();
+    setListWidth(listWidth.value + 24);
+  } else if (e.key === 'Home') {
+    e.preventDefault();
+    resetListWidth();
+  }
+};
 
 const toggleSelectionMode = () => {
   selectionMode.value = !selectionMode.value;
@@ -311,6 +434,11 @@ const resetFilters = () => {
   filterFrom.value = '';
   filterTo.value = '';
   store.clearFilters();
+};
+
+const resetAll = () => {
+  searchTerm.value = '';
+  resetFilters();
 };
 
 const loadingMore = ref(false);
@@ -477,38 +605,110 @@ onMounted(() => {
   display: flex;
   flex: 1;
   min-height: 0;
-  overflow: hidden;
   height: 100%;
+  overflow: hidden;
+}
+
+.split-container.is-resizing {
+  cursor: col-resize;
+  user-select: none;
 }
 
 .list-pane {
-  flex: 0 0 380px;
-  width: 380px;
+  flex: 0 0 var(--list-width, 400px);
+  width: var(--list-width, 400px);
   display: flex;
   flex-direction: column;
   overflow: hidden;
   height: 100%;
-  background-color: #ffffff; /* White background matching detail panel */
-  border-right: 1px solid #e8e6e0;
+  background-color: var(--surface);
+  border-right: 1px solid var(--border);
 }
 
 .details-pane {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
   height: 100%;
-  background-color: #ffffff; /* pure white */
+  background-color: var(--surface);
 }
 
-/* Actions Panel */
+/* Collapsed list: a narrow rail with the way back */
+.list-rail {
+  display: none;
+  flex: 0 0 40px;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding-top: 8px;
+  background-color: var(--surface);
+  border-right: 1px solid var(--border);
+}
+
+.rail-count {
+  font-family: var(--font-mono);
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-3);
+}
+
+/* The divider between the panes. Wider than it looks, so it is easy to grab. */
+.pane-resizer {
+  position: relative;
+  z-index: 5;
+  flex: 0 0 9px;
+  margin: 0 -4px 0 -5px;
+  cursor: col-resize;
+  touch-action: none;
+}
+
+.pane-resizer::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  left: 3px;
+  width: 3px;
+  background-color: transparent;
+  transition: background-color 0.12s;
+}
+
+.pane-resizer:hover::after,
+.pane-resizer:focus-visible::after,
+.is-resizing .pane-resizer::after {
+  background-color: var(--accent);
+}
+
+.pane-resizer:focus-visible {
+  box-shadow: none;
+}
+
+@media (min-width: 769px) {
+  .list-collapsed .list-pane,
+  .list-collapsed .pane-resizer {
+    display: none;
+  }
+
+  .list-collapsed .list-rail {
+    display: flex;
+  }
+}
+
+/* Search and actions */
 .actions-panel {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-direction: column;
   gap: 6px;
-  padding: 6px 10px;
-  border-bottom: 1px solid #e8e6e0;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
+}
+
+.search-row {
+  display: flex;
+  align-items: center;
+  gap: 4px;
 }
 
 .search-box {
@@ -519,226 +719,179 @@ onMounted(() => {
 
 .search-icon {
   position: absolute;
-  left: 6px;
+  left: 10px;
   top: 50%;
   transform: translateY(-50%);
-  color: #aaa9a3;
-  font-size: 10px;
+  color: var(--text-3);
+  font-size: 12px;
+  pointer-events: none;
 }
 
 .search-box input {
   width: 100%;
-  padding: 4px 20px 4px 22px;
-  border-radius: 3px;
-  border: 1px solid #dddbd4;
-  background-color: #ffffff;
-  color: #1a1a2e;
+  height: 32px;
+  padding: 0 30px 0 30px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-strong);
+  background-color: var(--surface);
+  color: var(--text);
+  font-size: 13px;
   outline: none;
-  font-size: 10.5px;
-  font-family: var(--font-family);
+  transition: border-color 0.12s, box-shadow 0.12s;
 }
 
 .search-box input::placeholder {
-  color: #aaa9a3;
+  color: var(--text-3);
+}
+
+.search-box input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .clear-search {
   position: absolute;
-  right: 6px;
+  right: 5px;
   top: 50%;
   transform: translateY(-50%);
+  width: 22px;
+  height: 22px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
   background: none;
   border: none;
-  color: #aaa9a3;
-  cursor: pointer;
-  padding: 0;
-}
-
-.actions-panel .btn {
-  height: 22px;
-  padding: 2px 6px;
+  border-radius: var(--radius-sm);
+  color: var(--text-3);
   font-size: 10px;
-  border-radius: 3px;
-  line-height: 1;
+  cursor: pointer;
 }
 
-.actions-panel .btn i {
-  font-size: 9px;
-  margin-right: 3px !important;
+.clear-search:hover {
+  background-color: var(--surface-hover);
+  color: var(--text);
 }
 
 .btn-group {
   display: flex;
-  gap: 0.25rem;
+  gap: 6px;
 }
 
-.btn {
-  padding: 4px 8px;
-  font-weight: 500;
-  font-size: 11px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  border: 1px solid transparent;
-  transition: all 0.15s;
-}
-
-.btn-sm {
-  padding: 3px 6px;
-  font-size: 10px;
-}
-
-.btn-neutral {
-  border: 1px solid #dddbd4;
-  background-color: #ffffff;
-  color: #5f5e5a;
-  border-radius: 3px;
-}
-
-.btn-neutral:hover {
-  background-color: #eeecea;
-}
-
-.btn-neutral.active {
-  border-color: #4a7fc1;
-  color: #4a7fc1;
-}
-
-.btn-terracotta {
-  background-color: #fdf2ef;
-  border: 1px solid #e8c4ba;
-  color: #b05a4a;
-  border-radius: 3px;
-}
-
-.btn-terracotta:hover {
-  background-color: #f9e2db;
-}
-
-.btn-text {
-  background: none;
-  border: none;
-  color: #888780;
-}
-
-.btn-text:hover {
-  color: #1a1a2e;
+.btn-delete-all {
+  margin-left: auto;
 }
 
 .active-dot {
-  width: 4px;
-  height: 4px;
-  background-color: #4a7fc1;
+  width: 6px;
+  height: 6px;
+  background-color: var(--accent);
   border-radius: 50%;
-  display: inline-block;
-  margin-left: 0.2rem;
 }
 
-/* Advanced Filters Card */
+/* Filters */
 .filters-card {
-  margin: 0 10px 10px 10px;
-  padding: 10px;
-  border-radius: 3px;
-  border: 1px solid #dddbd4;
-  background-color: #ffffff;
+  padding: 12px;
+  background-color: var(--surface-2);
+  border-bottom: 1px solid var(--border);
 }
 
 .filters-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(110px, 1fr));
-  gap: 0.35rem;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px 10px;
 }
 
 .filter-field {
   display: flex;
   flex-direction: column;
-  gap: 0.15rem;
+  gap: 3px;
+  min-width: 0;
 }
 
 .filter-field label {
-  font-size: 9px;
-  font-weight: 700;
-  color: #aaa9a3;
-  text-transform: uppercase;
-  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 500;
+  color: var(--text-2);
 }
 
-.filter-field input,
-.filter-field select {
-  padding: 0.25rem;
-  border-radius: 3px;
-  border: 1px solid #dddbd4;
-  background-color: #ffffff;
-  color: #1a1a2e;
+.filter-field input {
+  width: 100%;
+  height: 28px;
+  padding: 0 8px;
+  border-radius: var(--radius);
+  border: 1px solid var(--border-strong);
+  background-color: var(--surface);
+  color: var(--text);
+  font-size: 12.5px;
   outline: none;
-  font-size: 10px;
 }
 
-.filter-field input:focus,
-.filter-field select:focus {
-  border-color: #4a7fc1;
+.filter-field input::placeholder {
+  color: var(--text-3);
+}
+
+.filter-field input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px var(--accent-soft);
 }
 
 .filters-footer {
-  margin-top: 0.35rem;
+  margin-top: 8px;
   display: flex;
   justify-content: flex-end;
 }
 
-/* Bulk Toolbar */
+.slide-down-enter-active,
+.slide-down-leave-active {
+  transition: opacity 0.12s ease;
+}
+
+.slide-down-enter-from,
+.slide-down-leave-to {
+  opacity: 0;
+}
+
+/* Bulk selection */
 .bulk-toolbar {
-  background-color: #eeecea; /* Bulk action bar */
-  border: 1px solid #e8e6e0;
-  padding: 6px 10px;
   display: flex;
   justify-content: space-between;
   align-items: center;
-  margin: 0 10px 8px 10px;
-  border-radius: 3px;
+  padding: 8px 12px;
+  background-color: var(--accent-soft);
+  border-bottom: 1px solid var(--border);
 }
 
 .selected-count {
-  font-weight: 500;
-  color: #5f5e5a;
-  font-size: 11px;
+  font-weight: 600;
+  font-size: 12.5px;
+  color: var(--accent-text);
 }
 
-.bulk-actions {
-  display: flex;
-}
-
-
-/* Select All Bar */
 .select-all-bar {
-  padding: 6px 12px;
-  border-bottom: 1px solid #e8e6e0;
-  display: flex;
-  align-items: center;
-  background-color: #ffffff;
+  padding: 8px 12px;
+  border-bottom: 1px solid var(--border);
 }
 
 .select-all-label {
   display: flex;
   align-items: center;
-  gap: 0.5rem;
-  font-size: 11px;
-  color: #888780;
-  font-weight: 500;
+  gap: 8px;
+  font-size: 12.5px;
+  color: var(--text-2);
   cursor: pointer;
   user-select: none;
 }
 
-.select-all-checkbox, .item-checkbox {
+.select-all-checkbox,
+.item-checkbox {
+  width: 15px;
+  height: 15px;
+  margin: 0;
   cursor: pointer;
-  accent-color: #4a7fc1;
-  width: 13px;
-  height: 13px;
-  border-radius: 3px;
-  border: 1px solid #dddbd4;
+  accent-color: var(--accent);
 }
 
-/* Error List Container */
+/* List */
 .error-list-container {
   display: flex;
   flex-direction: column;
@@ -750,11 +903,8 @@ onMounted(() => {
 
 .list-loading-overlay {
   position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background-color: rgba(247, 246, 242, 0.6);
+  inset: 0;
+  background-color: color-mix(in srgb, var(--surface) 60%, transparent);
   display: flex;
   justify-content: center;
   align-items: center;
@@ -762,8 +912,8 @@ onMounted(() => {
 }
 
 .list-loading-spinner {
-  font-size: 1.5rem;
-  color: #4a7fc1;
+  font-size: 20px;
+  color: var(--accent);
 }
 
 .error-rows-list {
@@ -772,208 +922,176 @@ onMounted(() => {
   flex: 1;
   overflow-y: auto;
   min-height: 0;
+  -webkit-overflow-scrolling: touch;
 }
 
-/* Error List Item Row */
+/*
+ * A row is two lines so a screenful shows as many errors as possible. The rail on
+ * the left edge carries the severity for the whole list at a glance; the selected
+ * row is marked by its background, so the two never compete.
+ */
 .error-list-item {
+  position: relative;
   display: flex;
   align-items: flex-start;
-  padding: 12px 10px;
-  border-bottom: 1px solid #e8e6e0;
-  border-left: 3px solid transparent;
+  gap: 10px;
+  padding: 7px 12px 7px 15px;
+  border-bottom: 1px solid var(--border);
   cursor: pointer;
-  transition: background-color 150ms ease, border-left-color 150ms ease;
-  background-color: transparent;
-  gap: 8px;
-  border-radius: 0 !important;
+  transition: background-color 0.1s ease;
+}
+
+.error-list-item::before {
+  content: "";
+  position: absolute;
+  left: 0;
+  top: 0;
+  bottom: 0;
+  width: 3px;
+  background-color: var(--danger);
+}
+
+.error-list-item.sev-warning::before {
+  background-color: var(--warn);
+}
+
+.error-list-item.sev-success::before {
+  background-color: var(--ok);
+}
+
+.error-list-item.sev-info::before {
+  background-color: var(--info);
 }
 
 .error-list-item:hover {
-  background-color: #f2f9fc; /* Soft cyan-blue hover */
+  background-color: var(--surface-hover);
 }
 
 .error-list-item.active-item {
-  background-color: #e6f2f7 !important; /* Soft cyan-blue active matching metadata card */
-  border-left: 3px solid #00a2ed !important; /* Theme blue/cyan border matching exception detail */
-}
-
-.error-list-item.reviewed-item {
-  opacity: 0.55;
+  background-color: var(--accent-soft);
 }
 
 .item-checkbox-container {
   display: flex;
-  align-items: center;
-  justify-content: center;
-  padding-top: 10px;
+  padding-top: 3px;
   flex-shrink: 0;
 }
 
-.item-checkbox {
-  cursor: pointer;
-  accent-color: #4a7fc1;
-  width: 13px;
-  height: 13px;
-  border-radius: 3px;
-  border: 1px solid #dddbd4;
-}
-
-.item-left-col {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 4px;
-  flex-shrink: 0;
-  width: 46px;
-}
-
-.status-badge-circle {
-  font-family: var(--font-mono);
-  font-weight: 700;
-  font-size: 10px;
-  width: 32px;
-  height: 32px;
-  border-radius: 50%;
-  color: white;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  white-space: nowrap;
-  background-color: #aaa9a3; /* fallback */
-  flex-shrink: 0;
-}
-
-.status-badge-circle.error,
-.status-badge-circle.status-500 {
-  background-color: #d94f4f !important; /* HTTP 500 red circle */
-}
-
-.status-badge-circle.warning {
-  background-color: #f59e0b !important;
-}
-
-.status-badge-circle.success {
-  background-color: #10b981 !important;
-}
-
-.status-badge-circle.info {
-  background-color: #3b82f6 !important;
-}
-
-.error-time-relative {
-  font-family: var(--font-family);
-  font-size: 10px;
-  color: #aaa9a3;
-  line-height: 1.1;
-  white-space: nowrap;
-  margin-left: auto;
-  flex-shrink: 0;
-}
-
-.item-right-col {
+.item-main {
   flex: 1;
   min-width: 0;
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: 2px;
+}
+
+.item-top-row,
+.item-bottom-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  min-width: 0;
+}
+
+.item-bottom-row {
+  align-items: baseline;
+}
+
+.error-list-item .status-chip {
+  height: 18px;
+  min-width: 32px;
+  font-size: 11px;
 }
 
 .error-type-title {
-  font-weight: bold;
-  font-size: 12px;
-  color: #000000;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.error-url-row {
-  display: flex;
-  align-items: center;
-  gap: 6px;
-  min-width: 0;
-}
-
-.method-badge {
-  padding: 1px 4px;
-  font-size: 9px;
-  font-weight: bold;
-  font-family: var(--font-mono);
-  border-radius: 2px;
-  color: #ffffff;
-  background-color: #888780;
-  flex-shrink: 0;
-  text-transform: uppercase;
-}
-
-.method-badge.POST {
-  background-color: #b05a4a;
-}
-
-.method-badge.GET {
-  background-color: #888780;
-}
-
-.url-text {
-  font-size: 11px;
-  color: #333333;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
   flex: 1;
+  min-width: 0;
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.error-time-relative {
+  font-size: 11.5px;
+  color: var(--text-3);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .error-message-text {
-  font-size: 11px;
-  color: #111111;
-  line-height: 1.4;
-  word-break: break-word;
-  display: -webkit-box;
-  -webkit-line-clamp: 2;
-  -webkit-box-orient: vertical;
+  flex: 1 1 auto;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--text-2);
+  white-space: nowrap;
   overflow: hidden;
+  text-overflow: ellipsis;
 }
 
 .active-item .error-message-text {
-  color: #000000;
+  color: var(--text);
 }
 
-/* Infinite Scroll Footer Styling */
-.infinite-scroll-footer {
-  padding: 8px 12px;
-  border-top: 1px solid #e8e6e0;
+.url-text {
+  flex: 0 1 auto;
+  max-width: 42%;
   font-size: 11px;
-  color: #aaa9a3;
-  background-color: #ffffff; /* White background */
+  color: var(--text-3);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.infinite-scroll-footer {
+  padding: 5px 12px;
+  border-top: 1px solid var(--border);
+  font-size: 11.5px;
+  color: var(--text-3);
   text-align: center;
 }
 
-/* Empty & Skeleton states */
+/* Empty and loading states */
 .empty-state {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
   text-align: center;
-  padding: 3rem;
-  color: #aaa9a3;
+  padding: 48px 24px;
+  color: var(--text-2);
+}
+
+.empty-state h3 {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.empty-state p {
+  margin: 0 0 14px;
+  max-width: 260px;
 }
 
 .empty-icon {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
-}
-
-.text-success {
-  color: var(--success-color);
+  font-size: 26px;
+  margin-bottom: 12px;
+  color: var(--ok);
 }
 
 .skeleton-container {
-  padding: 1rem;
+  padding: 12px;
 }
 
 .skeleton-row {
-  height: 50px;
-  background: linear-gradient(90deg, #f7f6f2 25%, #e8e6e0 50%, #f7f6f2 75%);
+  height: 44px;
+  border-radius: var(--radius);
+  background: linear-gradient(90deg, var(--surface-2) 25%, var(--border) 50%, var(--surface-2) 75%);
   background-size: 200% 100%;
   animation: loading 1.5s infinite;
-  margin-bottom: 0.5rem;
+  margin-bottom: 8px;
 }
 
 @keyframes loading {
@@ -991,41 +1109,44 @@ onMounted(() => {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  color: #aaa9a3;
-  padding: 3rem;
+  gap: 10px;
+  color: var(--text-3);
+  padding: 48px;
   text-align: center;
 }
 
-.placeholder-icon {
-  font-size: 2rem;
-  margin-bottom: 0.5rem;
+.no-error-selected p {
+  margin: 0;
 }
 
-/* Responsive Overrides */
+.placeholder-icon {
+  font-size: 20px;
+}
+
 @media (max-width: 768px) {
+  .pane-resizer,
+  .btn-collapse-list {
+    display: none;
+  }
+
   .list-pane {
-    flex: 1 0 100% !important;
-    width: 100% !important;
-    max-width: 100% !important;
+    flex: 1 0 100%;
+    width: 100%;
+    border-right: none;
   }
 
   .details-pane {
-    flex: 1 0 100% !important;
-    width: 100% !important;
-    max-width: 100% !important;
-    display: none !important;
+    flex: 1 0 100%;
+    width: 100%;
+    display: none;
   }
 
   .details-pane.active {
-    display: flex !important;
+    display: flex;
   }
 
   .errors-list-view.has-selection .list-pane {
-    display: none !important;
+    display: none;
   }
-}
-
-.error-rows-list {
-  -webkit-overflow-scrolling: touch;
 }
 </style>
