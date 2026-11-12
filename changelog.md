@@ -1,5 +1,24 @@
 # Release Notes
 
+## 2.2.15
+
+### Summary
+
+Redesigned the dashboard: a new white and teal colour scheme with a working dark theme, a denser error list, and a list pane that can be resized and collapsed.
+
+### Changes
+
+- Replaced the colour scheme with a white and teal palette driven by shared design tokens, and added a real dark theme. The theme follows the operating system by default and can be switched from the header; the choice is remembered.
+- Made error list rows two lines tall so roughly twice as many errors fit on screen. Severity is shown by a coloured rail on the left edge of each row.
+- Made the error list resizable by dragging the divider (double-click to reset) and collapsible to a narrow rail. Both settings are remembered.
+- Reworked the detail panel header: labelled Copy ID, Copy link, XML and JSON actions, and previous/next navigation on the left.
+- Fixed stack trace frames breaking onto separate lines from their leading "at".
+- Restyled the statistics page; charts now follow the theme, and the status code breakdown is a bar chart of the six most frequent codes.
+- Switched the interface fonts to IBM Plex Sans and JetBrains Mono and raised the minimum text size.
+- Renamed the "Clear" button to "Delete all" and reworded empty states and notifications.
+- On small screens the header no longer shows the auto refresh selector (it remains under Settings), which stops it covering the navigation links.
+- Fixed the header and About dialog showing different, outdated version numbers.
+
 ## 2.2.14
 
 ### Summary

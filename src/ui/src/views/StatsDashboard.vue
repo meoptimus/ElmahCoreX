@@ -2,13 +2,13 @@
   <div class="stats-dashboard-view">
     <div v-if="loading" class="loading-state card">
       <i class="pi pi-spin pi-spinner loading-icon"></i>
-      <p>Analyzing error logs and compiling statistics...</p>
+      <p>Reading the error log…</p>
     </div>
 
     <div v-else-if="errors.length === 0" class="empty-state card">
       <i class="pi pi-chart-bar empty-icon"></i>
-      <h3>No Data Available</h3>
-      <p>Please log some errors to see statistical dashboard insights.</p>
+      <h3>Nothing to chart yet</h3>
+      <p>Statistics appear here once errors have been logged.</p>
     </div>
 
     <div v-else class="dashboard-grid">
@@ -16,43 +16,44 @@
       <div v-if="totalErrorsInDb > 500 || isAnalyzingAll" class="analysis-control-bar card">
         <div class="analysis-info">
           <span v-if="!isAnalyzingAll">
-            Currently analyzing the latest <strong>{{ errors.length }}</strong> errors.
-            Total errors in database: <strong>{{ totalErrorsInDb }}</strong>.
+            These figures cover the latest <strong>{{ errors.length }}</strong> of
+            <strong>{{ totalErrorsInDb }}</strong> errors in the log.
           </span>
           <span v-else>
-            Analyzing all errors... Loaded <strong>{{ errors.length }}</strong> of <strong>{{ totalErrorsInDb }}</strong>
+            Analysing the whole log: <strong>{{ errors.length }}</strong> of <strong>{{ totalErrorsInDb }}</strong>
             ({{ Math.round((errors.length / totalErrorsInDb) * 100) }}%)
           </span>
         </div>
         <div class="analysis-actions">
           <button v-if="!isAnalyzingAll && errors.length < totalErrorsInDb" class="btn btn-primary" @click="startBackgroundAnalysis">
-            <i class="pi pi-bolt mr-1"></i> Analyze All Errors
+            Analyse all errors
           </button>
-          <button v-if="isAnalyzingAll" class="btn btn-danger" @click="stopBackgroundAnalysis">
-            <i class="pi pi-times mr-1"></i> Stop Analysis
+          <button v-if="isAnalyzingAll" class="btn btn-secondary" @click="stopBackgroundAnalysis">
+            <i class="pi pi-times"></i> Stop analysing
           </button>
         </div>
+        <div v-if="isAnalyzingAll" class="progress-bar-container">
+          <div class="progress-bar-fill" :style="{ width: (errors.length / totalErrorsInDb * 100) + '%' }"></div>
+        </div>
       </div>
-      <div v-if="isAnalyzingAll" class="progress-bar-container">
-        <div class="progress-bar-fill" :style="{ width: (errors.length / totalErrorsInDb * 100) + '%' }"></div>
-      </div>
+
       <!-- 1. Key Metrics Cards -->
       <div class="metrics-row">
         <div class="metric-card card">
-          <span class="metric-label">Total Logs Analyzed</span>
+          <span class="metric-label">Errors analysed</span>
           <span class="metric-value">{{ errors.length }}</span>
         </div>
         <div class="metric-card card">
-          <span class="metric-label">Unique Exception Types</span>
+          <span class="metric-label">Exception types</span>
           <span class="metric-value">{{ uniqueTypesCount }}</span>
         </div>
-        <div class="metric-card card clickable-card" @click="filterByUnreviewed">
-          <span class="metric-label">Unreviewed Errors</span>
-          <span class="metric-value text-danger">{{ unreviewedCount }}</span>
+        <div class="metric-card card clickable-card" @click="filterByUnreviewed" title="Show unreviewed errors">
+          <span class="metric-label">Unreviewed errors</span>
+          <span class="metric-value">{{ unreviewedCount }}</span>
         </div>
-        <div class="metric-card card clickable-card" @click="filterByType(topExceptionName)">
-          <span class="metric-label">Most Common Exception</span>
-          <span class="metric-value text-primary truncate-text" :title="topExceptionName">
+        <div class="metric-card card clickable-card" @click="filterByType(topExceptionName)" :title="`Show ${topExceptionName} errors`">
+          <span class="metric-label">Most common exception</span>
+          <span class="metric-value metric-value-text truncate-text">
             {{ topExceptionNameShort }}
           </span>
         </div>
@@ -62,25 +63,25 @@
       <div class="charts-row">
         <!-- Error Rate Chart -->
         <div class="chart-card card col-span-2">
-          <h3 class="chart-title"><i class="pi pi-chart-line mr-1"></i> Error Rate Trend</h3>
+          <h3 class="chart-title">Errors per day</h3>
           <div class="chart-container">
-            <canvas ref="trendChartCanvas"></canvas>
+            <canvas ref="trendChartCanvas" role="img" aria-label="Line chart of errors per day"></canvas>
           </div>
         </div>
 
         <!-- Exception Types Distribution -->
         <div class="chart-card card">
-          <h3 class="chart-title"><i class="pi pi-align-left mr-1"></i> Top Exceptions</h3>
+          <h3 class="chart-title">Most frequent exception types</h3>
           <div class="chart-container">
-            <canvas ref="typeChartCanvas"></canvas>
+            <canvas ref="typeChartCanvas" role="img" aria-label="Bar chart of the most frequent exception types"></canvas>
           </div>
         </div>
 
         <!-- Status Code Distribution -->
         <div class="chart-card card">
-          <h3 class="chart-title"><i class="pi pi-percentage mr-1"></i> Status Code Breakdown</h3>
+          <h3 class="chart-title">Errors by status code</h3>
           <div class="chart-container">
-            <canvas ref="statusChartCanvas"></canvas>
+            <canvas ref="statusChartCanvas" role="img" aria-label="Bar chart of errors by HTTP status code"></canvas>
           </div>
         </div>
       </div>
@@ -89,14 +90,14 @@
       <div class="lists-row">
         <!-- Top Impacted Endpoints -->
         <div class="list-card card">
-          <h3 class="list-title"><i class="pi pi-link mr-1"></i> Top 5 Affected URLs</h3>
+          <h3 class="list-title">Most affected URLs</h3>
           <ul class="stats-list">
             <li v-for="(item, idx) in topUrls" :key="idx" class="clickable-item">
               <router-link :to="{ path: '/', query: { message: item.name } }" class="stats-list-link">
                 <span class="list-index">{{ idx + 1 }}</span>
                 <div class="list-content">
                   <span class="list-name font-mono text-break" :title="item.name">{{ item.name || 'N/A' }}</span>
-                  <span class="list-count">{{ item.count }} occurrences</span>
+                  <span class="list-count">{{ item.count }}</span>
                 </div>
               </router-link>
             </li>
@@ -105,27 +106,27 @@
 
         <!-- Top Affected Users -->
         <div class="list-card card">
-          <h3 class="list-title"><i class="pi pi-users mr-1"></i> Top 5 Impacted Users</h3>
+          <h3 class="list-title">Most affected users</h3>
           <ul class="stats-list" v-if="topUsers.length > 0">
             <li v-for="(item, idx) in topUsers" :key="idx" :class="{ 'clickable-item': item.name && item.name !== 'Anonymous' }">
               <router-link v-if="item.name && item.name !== 'Anonymous'" :to="{ path: '/', query: { user: item.name } }" class="stats-list-link">
                 <span class="list-index">{{ idx + 1 }}</span>
                 <div class="list-content">
-                  <span class="list-name font-bold">{{ item.name }}</span>
-                  <span class="list-count">{{ item.count }} occurrences</span>
+                  <span class="list-name">{{ item.name }}</span>
+                  <span class="list-count">{{ item.count }}</span>
                 </div>
               </router-link>
               <div v-else class="stats-list-link-disabled">
                 <span class="list-index">{{ idx + 1 }}</span>
                 <div class="list-content">
-                  <span class="list-name font-bold text-muted">{{ item.name || 'Anonymous' }}</span>
-                  <span class="list-count">{{ item.count }} occurrences</span>
+                  <span class="list-name text-muted">{{ item.name || 'Anonymous' }}</span>
+                  <span class="list-count">{{ item.count }}</span>
                 </div>
               </div>
             </li>
           </ul>
           <div v-else class="empty-list-state">
-            <p>No user variables logged.</p>
+            <p>None of the analysed errors has a signed-in user.</p>
           </div>
         </div>
       </div>
@@ -296,12 +297,70 @@ const stopBackgroundAnalysis = () => {
   isAnalyzingAll.value = false;
 };
 
+// Charts are drawn on canvas, so they cannot inherit CSS: read the theme tokens
+// when drawing and redraw whenever the theme class on <html> changes.
+const token = (name) =>
+  getComputedStyle(document.documentElement).getPropertyValue(name).trim();
+
+const themeObserver = new MutationObserver(() => renderCharts());
+
 onBeforeUnmount(() => {
   isAnalyzingAll.value = false;
+  themeObserver.disconnect();
+  [trendChart, typeChart, statusChart].forEach(c => c && c.destroy());
 });
 
 const renderCharts = () => {
   if (errors.value.length === 0) return;
+
+  const accent = token('--accent');
+  const gridColor = token('--border');
+  const animation = isAnalyzingAll.value ? false : undefined;
+
+  Chart.defaults.color = token('--text-3');
+  Chart.defaults.borderColor = gridColor;
+  Chart.defaults.font.family = token('--font-sans');
+  Chart.defaults.font.size = 12;
+
+  const tooltip = {
+    backgroundColor: token('--text'),
+    titleColor: token('--surface'),
+    bodyColor: token('--surface'),
+    padding: 8,
+    cornerRadius: 6,
+    displayColors: false
+  };
+
+  const countScale = {
+    beginAtZero: true,
+    ticks: { precision: 0 },
+    grid: { color: gridColor },
+    border: { display: false }
+  };
+
+  const labelScale = { grid: { display: false }, border: { color: gridColor } };
+
+  const barChart = (canvas, labels, data) => new Chart(canvas, {
+    type: 'bar',
+    data: {
+      labels,
+      datasets: [{
+        label: 'Errors',
+        data,
+        backgroundColor: accent,
+        borderRadius: 4,
+        maxBarThickness: 20
+      }]
+    },
+    options: {
+      indexAxis: 'y',
+      responsive: true,
+      maintainAspectRatio: false,
+      animation,
+      plugins: { legend: { display: false }, tooltip },
+      scales: { x: countScale, y: labelScale }
+    }
+  });
 
 
   const dailyCounts = {};
@@ -329,23 +388,27 @@ const renderCharts = () => {
       data: {
         labels: trendLabels,
         datasets: [{
-          label: 'Error Rate',
+          label: 'Errors',
           data: trendData,
-          borderColor: '#4f46e5',
-          backgroundColor: 'rgba(79, 70, 229, 0.1)',
+          borderColor: accent,
+          backgroundColor: token('--accent-soft'),
           fill: true,
-          tension: 0.3,
-          borderWidth: 2
+          tension: 0.25,
+          borderWidth: 2,
+          pointRadius: 3,
+          pointHoverRadius: 5,
+          pointBackgroundColor: accent,
+          pointBorderColor: token('--surface'),
+          pointBorderWidth: 2
         }]
       },
       options: {
         responsive: true,
         maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          y: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.1)' } },
-          x: { grid: { color: 'rgba(148, 163, 184, 0.1)' } }
-        }
+        animation,
+        interaction: { mode: 'index', intersect: false },
+        plugins: { legend: { display: false }, tooltip },
+        scales: { y: countScale, x: labelScale }
       }
     });
   }
@@ -363,27 +426,11 @@ const renderCharts = () => {
 
   if (typeChartCanvas.value) {
     if (typeChart) typeChart.destroy();
-    typeChart = new Chart(typeChartCanvas.value, {
-      type: 'bar',
-      data: {
-        labels: topTypes.map(t => t[0]),
-        datasets: [{
-          data: topTypes.map(t => t[1]),
-          backgroundColor: ['#ef4444', '#f59e0b', '#3b82f6', '#10b981', '#6366f1'],
-          borderRadius: 6
-        }]
-      },
-      options: {
-        indexAxis: 'y',
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: { legend: { display: false } },
-        scales: {
-          x: { beginAtZero: true, grid: { color: 'rgba(148, 163, 184, 0.1)' } },
-          y: { grid: { display: false } }
-        }
-      }
-    });
+    typeChart = barChart(
+      typeChartCanvas.value,
+      topTypes.map(t => t[0]),
+      topTypes.map(t => t[1])
+    );
   }
 
 
@@ -392,72 +439,45 @@ const renderCharts = () => {
     const code = e.error.statusCode || 500;
     statusCounts[code] = (statusCounts[code] || 0) + 1;
   });
+  // Most frequent first. Bars rather than a ring, so codes with few errors stay readable.
+  const topStatuses = Object.entries(statusCounts)
+    .sort((a, b) => b[1] - a[1])
+    .slice(0, 6);
 
   if (statusChartCanvas.value) {
     if (statusChart) statusChart.destroy();
-    statusChart = new Chart(statusChartCanvas.value, {
-      type: 'doughnut',
-      data: {
-        labels: Object.keys(statusCounts).map(k => `HTTP ${k}`),
-        datasets: [{
-          data: Object.values(statusCounts),
-          backgroundColor: ['#ef4444', '#f59e0b', '#10b981', '#3b82f6', '#8b5cf6', '#64748b']
-        }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        plugins: {
-          legend: {
-            position: 'bottom',
-            labels: { boxWidth: 12, padding: 8 }
-          }
-        }
-      }
-    });
+    statusChart = barChart(
+      statusChartCanvas.value,
+      topStatuses.map(s => `HTTP ${s[0]}`),
+      topStatuses.map(s => s[1])
+    );
   }
 };
 
 onMounted(() => {
   loadStatsData();
+  themeObserver.observe(document.documentElement, { attributes: true, attributeFilter: ['class'] });
 });
 </script>
 
 <style scoped>
 .stats-dashboard-view {
+  padding: 20px;
+}
+
+.dashboard-grid {
   display: flex;
   flex-direction: column;
   gap: 16px;
-  padding: 16px 20px;
+  max-width: 1400px;
+  margin: 0 auto;
 }
 
 .card {
-  background-color: #ffffff;
-  border: 1px solid #e8e6e0;
-  border-radius: 0;
-  padding: 16px 20px;
-  box-shadow: none;
-}
-
-.mb-3 {
-  margin-bottom: 12px;
-}
-
-.font-mono {
-  font-family: var(--font-mono), monospace;
-}
-
-.font-bold {
-  font-weight: 500;
-  color: #1a1a2e;
-}
-
-.text-danger {
-  color: #d94f4f;
-}
-
-.text-primary {
-  color: #4a7fc1;
+  background-color: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-lg);
+  padding: 16px 18px;
 }
 
 .truncate-text {
@@ -466,93 +486,147 @@ onMounted(() => {
   white-space: nowrap;
 }
 
-
-/* Loading & Empty states */
+/* Loading and empty states */
 .loading-state,
 .empty-state {
+  max-width: 480px;
+  margin: 48px auto 0;
+  padding: 40px 24px;
   text-align: center;
-  padding: 40px;
-  color: #888780;
+  color: var(--text-2);
+}
+
+.empty-state h3 {
+  margin: 0 0 4px;
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.loading-state p,
+.empty-state p {
+  margin: 0;
+}
+
+.loading-icon,
+.empty-icon {
+  font-size: 24px;
+  margin-bottom: 12px;
+  color: var(--text-3);
 }
 
 .loading-icon {
-  font-size: 32px;
-  color: #4a7fc1;
-  margin-bottom: 16px;
+  color: var(--accent);
 }
 
-.empty-icon {
-  font-size: 40px;
-  margin-bottom: 16px;
-}
-
-.dashboard-grid {
+/* How much of the log these numbers cover */
+.analysis-control-bar {
+  position: relative;
   display: flex;
-  flex-direction: column;
-  gap: 16px;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+  padding: 10px 14px;
+  background-color: var(--surface-2);
+  overflow: hidden;
 }
 
-/* Metrics Row */
+.analysis-info {
+  color: var(--text-2);
+}
+
+.analysis-info strong {
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
+}
+
+.progress-bar-container {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  height: 3px;
+  background-color: var(--border);
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background-color: var(--accent);
+  transition: width 0.2s ease;
+}
+
+/* Headline figures */
 .metrics-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  grid-template-columns: repeat(4, minmax(0, 1fr));
   gap: 16px;
 }
 
 .metric-card {
   display: flex;
   flex-direction: column;
-  gap: 4px;
-  background-color: #ffffff;
-  border: 1px solid #e8e6e0;
+  gap: 6px;
+  min-width: 0;
 }
 
 .metric-label {
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #aaa9a3;
-  font-weight: 600;
+  font-size: 12.5px;
+  color: var(--text-2);
 }
 
 .metric-value {
-  font-size: 24px;
-  font-family: var(--font-mono), monospace;
-  font-weight: 500;
-  color: #1a1a2e;
+  font-size: 28px;
+  font-weight: 600;
+  line-height: 1.15;
+  letter-spacing: -0.01em;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
 
-/* Charts Section */
-.charts-row {
+/* A type name, not a number: set it smaller so it fits the tile */
+.metric-value-text {
+  font-family: var(--font-mono);
+  font-size: 16px;
+  line-height: 32px;
+  letter-spacing: 0;
+}
+
+.clickable-card {
+  cursor: pointer;
+  transition: border-color 0.12s, background-color 0.12s;
+}
+
+.clickable-card:hover {
+  border-color: var(--accent);
+  background-color: var(--surface-hover);
+}
+
+/* Charts */
+.charts-row,
+.lists-row {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
 }
 
-@media (min-width: 1024px) {
-  .charts-row {
-    grid-template-columns: repeat(2, 1fr);
-  }
-  .col-span-2 {
-    grid-column: span 2;
-  }
+.col-span-2 {
+  grid-column: span 2;
 }
 
 .chart-card {
   display: flex;
   flex-direction: column;
-  height: 320px;
+  height: 300px;
+  min-width: 0;
 }
 
-.chart-title {
-  margin: 0 0 16px 0;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #aaa9a3;
+.chart-title,
+.list-title {
+  margin: 0 0 12px;
+  font-size: 13.5px;
   font-weight: 600;
-  border-bottom: 1px solid #e8e6e0;
-  padding-bottom: 8px;
+  color: var(--text);
 }
 
 .chart-container {
@@ -570,219 +644,122 @@ onMounted(() => {
   height: 100% !important;
 }
 
-/* Lists section */
-.lists-row {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
-  gap: 16px;
-}
-
+/* Ranked lists */
 .list-card {
   display: flex;
   flex-direction: column;
-}
-
-.list-title {
-  margin: 0 0 16px 0;
-  font-size: 10px;
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  color: #aaa9a3;
-  font-weight: 600;
-  border-bottom: 1px solid #e8e6e0;
-  padding-bottom: 8px;
+  min-width: 0;
 }
 
 .stats-list {
   list-style: none;
   padding: 0;
-  margin: 0;
-  display: flex;
-  flex-direction: column;
+  margin: 0 -8px;
 }
 
-.stats-list li {
-  border-bottom: 1px solid #e8e6e0;
-  padding: 0;
+.stats-list li + li {
+  border-top: 1px solid var(--border);
 }
 
-.stats-list li:last-child {
-  border-bottom: none;
-}
-
-.stats-list-link {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  padding: 10px 12px;
-  width: 100%;
-  text-decoration: none;
-  color: inherit;
-}
-
+.stats-list-link,
 .stats-list-link-disabled {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 10px 12px;
-  width: 100%;
+  padding: 9px 8px;
+  border-radius: var(--radius);
+  text-decoration: none;
   color: inherit;
 }
 
-.text-muted {
-  color: #aaa9a3;
-}
-
-/* Background analysis control bar & progress bar styles */
-.analysis-control-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 10px 16px;
-  background-color: #fcfbfa;
-  border-color: #e8e6e0;
-  gap: 12px;
-  flex-wrap: wrap;
-}
-
-.analysis-info {
-  font-size: 13px;
-  color: #5f5e5a;
-}
-
-.progress-bar-container {
-  width: 100%;
-  height: 4px;
-  background-color: #eeecea;
-  border-radius: 2px;
-  overflow: hidden;
-  margin-top: -12px;
-  margin-bottom: 4px;
-}
-
-.progress-bar-fill {
-  height: 100%;
-  background-color: #4a7fc1;
-  transition: width 0.2s ease;
-}
-
-.btn {
-  padding: 6px 12px;
-  font-size: 12px;
-  font-weight: 500;
-  border-radius: 4px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  border: 1px solid transparent;
-  transition: all 0.15s ease;
-}
-
-.btn-primary {
-  background-color: #4a7fc1;
-  color: white;
-  border-color: #3b6da6;
-}
-
-.btn-primary:hover {
-  background-color: #3b6da6;
-}
-
-.btn-danger {
-  background-color: #d94f4f;
-  color: white;
-  border-color: #c04343;
-}
-
-.btn-danger:hover {
-  background-color: #c04343;
+.clickable-item .stats-list-link:hover {
+  background-color: var(--surface-hover);
 }
 
 .list-index {
-  background-color: #eeecea;
-  color: #5f5e5a;
-  width: 24px;
-  height: 24px;
-  border-radius: 4px;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-weight: 500;
-  font-size: 11px;
-  font-family: var(--font-mono), monospace;
+  width: 16px;
+  flex-shrink: 0;
+  text-align: right;
+  color: var(--text-3);
+  font-size: 12px;
+  font-variant-numeric: tabular-nums;
 }
 
 .list-content {
   flex: 1;
+  min-width: 0;
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: baseline;
   gap: 16px;
 }
 
 .list-name {
-  font-size: 13px;
-  word-break: break-all;
   flex: 1;
-  color: #1a1a2e;
+  min-width: 0;
+  font-size: 12.5px;
+  color: var(--text);
+  overflow-wrap: anywhere;
 }
 
 .list-count {
-  font-size: 12px;
-  color: #888780;
-  white-space: nowrap;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+  font-variant-numeric: tabular-nums;
 }
 
 .empty-list-state {
-  text-align: center;
-  padding: 32px;
-  color: #888780;
-  font-size: 13px;
+  padding: 24px 0;
+  color: var(--text-3);
 }
 
-.clickable-card,
-.clickable-item {
-  cursor: pointer;
-  transition: background-color 0.15s ease, border-color 0.15s ease;
+.empty-list-state p {
+  margin: 0;
 }
 
-.clickable-card:hover {
-  background-color: #eeecea;
-  border-color: #aaa9a3;
-}
-
-.clickable-item:hover {
-  background-color: #eeecea;
+@media (max-width: 1000px) {
+  .metrics-row {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
 }
 
 @media (max-width: 768px) {
   .stats-dashboard-view {
-    padding: 10px;
-    gap: 12px;
+    padding: 12px;
   }
-  .metrics-row {
-    grid-template-columns: repeat(2, 1fr);
-    gap: 10px;
-  }
-  .metric-card {
-    padding: 10px 12px;
-  }
-  .metric-value {
-    font-size: 18px;
-  }
+
+  .dashboard-grid,
+  .metrics-row,
   .charts-row,
   .lists-row {
-    grid-template-columns: 1fr !important;
     gap: 12px;
   }
-  .chart-card {
-    grid-column: span 1 !important;
-    height: 260px;
-    padding: 12px;
+
+  .charts-row,
+  .lists-row {
+    grid-template-columns: minmax(0, 1fr);
   }
-  .list-card {
-    padding: 12px;
+
+  .col-span-2 {
+    grid-column: span 1;
+  }
+
+  .card {
+    padding: 12px 14px;
+  }
+
+  .metric-value {
+    font-size: 22px;
+  }
+
+  .metric-value-text {
+    font-size: 14px;
+    line-height: 26px;
+  }
+
+  .chart-card {
+    height: 260px;
   }
 }
 </style>

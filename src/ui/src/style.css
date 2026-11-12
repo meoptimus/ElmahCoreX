@@ -1,23 +1,379 @@
-/* CSS reset and global defaults */
-html, body {
+/*
+ * Design tokens. Every colour in the app comes from here so the light and dark
+ * themes stay in step. The dark theme is applied by the `dark-mode` class on <html>
+ * (set in App.vue, which also follows the system preference by default).
+ */
+:root {
+  --font-sans: 'IBM Plex Sans', system-ui, -apple-system, 'Segoe UI', sans-serif;
+  --font-mono: 'JetBrains Mono', Consolas, 'SFMono-Regular', Menlo, monospace;
+
+  /* Surfaces */
+  --bg: #f2f4f4;
+  --surface: #ffffff;
+  --surface-2: #f5f7f7;
+  --surface-hover: #eef3f2;
+  --border: #dde3e2;
+  --border-strong: #c3cccb;
+
+  /* Text */
+  --text: #16201f;
+  --text-2: #4d5b59;
+  --text-3: #687876;
+
+  /* Accent: teal. Kept away from the severity hues so it never reads as a status. */
+  --accent: #0d7a6f;
+  --accent-hover: #0a6259;
+  --accent-soft: #dff3f0;
+  --accent-text: #0a655c;
+  --on-accent: #ffffff;
+
+  /* Severity. Reserved for status, never used as decoration. */
+  --danger: #d33a3a;
+  --danger-soft: #fdecec;
+  --danger-text: #b02626;
+  --danger-border: #f3c4c4;
+  --warn: #d98200;
+  --warn-soft: #fff3dc;
+  --warn-text: #8f5600;
+  --ok: #1d8a5b;
+  --ok-soft: #e3f5ec;
+  --ok-text: #16704a;
+  --info: #2b6cc4;
+  --info-soft: #e6effb;
+  --info-text: #2259a5;
+
+  /* Code and stack traces */
+  --code-bg: #f7f9f9;
+  --code-file: #8a4b00;
+
+  /* Header: a light bar in the light theme, a dark one in the dark theme */
+  --header-bg: #ffffff;
+  --header-border: #dde3e2;
+  --header-text: #16201f;
+  --header-muted: #4d5b59;
+  --header-hover: rgba(0, 0, 0, 0.05);
+  --header-active: #dff3f0;
+  --header-active-text: #0a655c;
+  --logo-frame: #0d7a6f;
+  --logo-frame-top: #d33a3a;
+
+  --radius-sm: 4px;
+  --radius: 6px;
+  --radius-lg: 10px;
+  --shadow-pop: 0 12px 32px rgba(16, 32, 30, 0.16), 0 2px 6px rgba(16, 32, 30, 0.08);
+  --focus-ring: 0 0 0 2px var(--surface), 0 0 0 4px var(--accent);
+
+  /* Names used by older components */
+  --font-family: var(--font-sans);
+  --bg-color: var(--bg);
+  --panel-bg: var(--surface);
+  --border-color: var(--border);
+  --text-color: var(--text);
+  --text-light: var(--text-3);
+  --primary-color: var(--accent);
+  --primary-hover: var(--accent-hover);
+  --success-color: var(--ok);
+  --warning-color: var(--warn);
+  --error-color: var(--danger);
+
+  color-scheme: light;
+}
+
+html.dark-mode {
+  --bg: #0e1212;
+  --surface: #161b1b;
+  --surface-2: #1b2121;
+  --surface-hover: #1f2626;
+  --border: #293131;
+  --border-strong: #3a4544;
+
+  --text: #e6ecea;
+  --text-2: #a3b1ae;
+  --text-3: #7f8e8b;
+
+  --accent: #35c7b5;
+  --accent-hover: #5ad8c8;
+  --accent-soft: #12322e;
+  --accent-text: #6fe0d1;
+  --on-accent: #06201c;
+
+  --danger: #f26565;
+  --danger-soft: #3a1c21;
+  --danger-text: #ff9c9c;
+  --danger-border: #5c2a30;
+  --warn: #eaa93d;
+  --warn-soft: #3a2c12;
+  --warn-text: #f3c26f;
+  --ok: #45c48d;
+  --ok-soft: #143225;
+  --ok-text: #6fdcab;
+  --info: #6aa5f3;
+  --info-soft: #162a45;
+  --info-text: #93bff8;
+
+  --code-bg: #111515;
+  --code-file: #e0a96a;
+
+  --header-bg: #161b1b;
+  --header-border: #293131;
+  --header-text: #e6ecea;
+  --header-muted: #a3b1ae;
+  --header-hover: rgba(255, 255, 255, 0.07);
+  --header-active: #12322e;
+  --header-active-text: #6fe0d1;
+  --logo-frame: #35c7b5;
+  --logo-frame-top: #f26565;
+
+  --shadow-pop: 0 12px 32px rgba(0, 0, 0, 0.5), 0 2px 6px rgba(0, 0, 0, 0.3);
+
+  color-scheme: dark;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+html,
+body {
   margin: 0;
   padding: 0;
   width: 100%;
   height: 100%;
-  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+}
+
+body {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  line-height: 1.45;
+  background-color: var(--bg);
+  color: var(--text);
+  overflow: hidden;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-size: 14px;
 }
 
-pre, code {
-  font-family: SFMono-Regular, Consolas, Monaco, monospace;
+pre,
+code,
+.font-mono {
+  font-family: var(--font-mono);
+  font-variant-ligatures: none;
 }
 
-/* Scrollbar customization */
+a {
+  color: var(--accent-text);
+}
+
+button,
+input,
+select,
+textarea {
+  font-family: inherit;
+}
+
+:focus-visible {
+  outline: none;
+  box-shadow: var(--focus-ring);
+  border-radius: var(--radius-sm);
+}
+
+/* Utilities */
+.mr-1 {
+  margin-right: 4px !important;
+}
+
+.mr-2 {
+  margin-right: 8px !important;
+}
+
+.ml-2 {
+  margin-left: 8px;
+}
+
+.font-bold {
+  font-weight: 600;
+}
+
+.text-primary {
+  color: var(--accent-text);
+}
+
+.text-danger {
+  color: var(--danger-text);
+}
+
+.text-success {
+  color: var(--ok-text);
+}
+
+.text-light,
+.text-muted {
+  color: var(--text-3);
+}
+
+.text-break {
+  word-break: break-all;
+  overflow-wrap: anywhere;
+}
+
+/* Buttons */
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  height: 30px;
+  padding: 0 12px;
+  border: 1px solid transparent;
+  border-radius: var(--radius);
+  background: none;
+  color: var(--text);
+  font-size: 12.5px;
+  font-weight: 500;
+  line-height: 1;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: background-color 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.btn i {
+  font-size: 12px;
+}
+
+.btn:disabled {
+  opacity: 0.45;
+  cursor: not-allowed;
+}
+
+.btn-sm {
+  height: 26px;
+  padding: 0 9px;
+  font-size: 12px;
+}
+
+.btn-icon {
+  width: 30px;
+  padding: 0;
+}
+
+.btn-sm.btn-icon {
+  width: 26px;
+}
+
+.btn-neutral,
+.btn-secondary {
+  background-color: var(--surface);
+  border-color: var(--border-strong);
+  color: var(--text-2);
+}
+
+.btn-neutral:hover:not(:disabled),
+.btn-secondary:hover:not(:disabled) {
+  background-color: var(--surface-hover);
+  color: var(--text);
+}
+
+.btn-neutral.active {
+  background-color: var(--accent-soft);
+  border-color: var(--accent);
+  color: var(--accent-text);
+}
+
+.btn-primary {
+  background-color: var(--accent);
+  border-color: var(--accent);
+  color: var(--on-accent);
+}
+
+.btn-primary:hover:not(:disabled) {
+  background-color: var(--accent-hover);
+  border-color: var(--accent-hover);
+}
+
+.btn-danger {
+  background-color: var(--danger);
+  border-color: var(--danger);
+  color: #ffffff;
+}
+
+.btn-danger:hover:not(:disabled) {
+  filter: brightness(0.92);
+}
+
+.btn-danger-soft {
+  background-color: transparent;
+  border-color: var(--danger-border);
+  color: var(--danger-text);
+}
+
+.btn-danger-soft:hover:not(:disabled) {
+  background-color: var(--danger-soft);
+}
+
+.btn-text {
+  color: var(--text-2);
+}
+
+.btn-text:hover:not(:disabled) {
+  background-color: var(--surface-hover);
+  color: var(--text);
+}
+
+/* Status and method chips, shared by the list and the detail panel */
+.status-chip {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 34px;
+  height: 20px;
+  padding: 0 6px;
+  border-radius: var(--radius-sm);
+  font-family: var(--font-mono);
+  font-size: 11.5px;
+  font-weight: 700;
+  flex-shrink: 0;
+  background-color: var(--danger-soft);
+  color: var(--danger-text);
+}
+
+.status-chip.warning {
+  background-color: var(--warn-soft);
+  color: var(--warn-text);
+}
+
+.status-chip.success {
+  background-color: var(--ok-soft);
+  color: var(--ok-text);
+}
+
+.status-chip.info {
+  background-color: var(--info-soft);
+  color: var(--info-text);
+}
+
+.method-badge {
+  font-family: var(--font-mono);
+  font-size: 10.5px;
+  font-weight: 700;
+  color: var(--text-2);
+  border: 1px solid var(--border-strong);
+  border-radius: 3px;
+  padding: 0 4px;
+  line-height: 15px;
+  flex-shrink: 0;
+  text-transform: uppercase;
+}
+
+/* Scrollbars */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: var(--border-strong) transparent;
+}
+
 ::-webkit-scrollbar {
-  width: 6px;
-  height: 6px;
+  width: 8px;
+  height: 8px;
 }
 
 ::-webkit-scrollbar-track {
@@ -25,10 +381,19 @@ pre, code {
 }
 
 ::-webkit-scrollbar-thumb {
-  background: var(--border-color, #cbd5e1);
-  border-radius: 3px;
+  background: var(--border-strong);
+  border-radius: 4px;
 }
 
 ::-webkit-scrollbar-thumb:hover {
-  background: var(--text-light, #94a3b8);
+  background: var(--text-3);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
 }
